@@ -1,2 +1,4 @@
 # paraguide
-www,paraguide.uk and www.para-sites.uk
+
+## Peak District Paragliding Sites
+www.paraguide.uk and www.para-sites.uk
