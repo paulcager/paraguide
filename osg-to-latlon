@@ -1,0 +1,16 @@
+#!/usr/bin/nodejs
+
+var OsGridRef = require('osgridref.js');
+var readline = require('readline');
+
+//var LatLon = OsGridRef.osGridToLatLon(OsGridRef.parse("SJ220400"));
+
+var rl = readline.createInterface({
+  input: process.stdin,
+  terminal: false,
+});
+
+rl.on('line', function (line) {
+  var LatLon = OsGridRef.osGridToLatLon(OsGridRef.parse(line));
+  console.log(LatLon.lat + "," + LatLon.lon);
+});

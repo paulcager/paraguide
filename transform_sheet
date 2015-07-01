@@ -1,0 +1,63 @@
+#!/bin/bash
+
+SHEET='https://spreadsheets.google.com/feeds/list/13blLictRsToqT7HReMA9IcUfHp3BzUPIhmgHadMmpW8/od6/public/full'
+export NODE_PATH=$HOME/geodesy/
+
+curl -s "$SHEET" |xmlstarlet sel  -T -t -m '/_:feed/_:entry' -m gsx:* -v .  -o '|' -b -n | gawk -F '|' '
+BEGIN {
+	OFS="|"
+	print "function create_sites() {"
+	print "    var sites = {};"
+	print "";
+}
+
+function osgrid_to_latlng(grid,  local_latlng, local_arr) {
+	if (grid == "") return ""
+	cmd = "echo " grid " | ./osg-to-latlon"
+	cmd | getline local_latlng
+	close(cmd)
+	split(local_latlng, local_arr, ",");
+	return sprintf("%.6f,%.6f", local_arr[1], local_arr[2]);
+}
+
+function latlng_to_gmap(latlng) {
+	if (latlng == "") return ""
+	
+	return "https://www.google.co.uk/maps/search/" latlng;
+}
+
+function s(x) {
+	return "\"" x "\"";
+}
+function c(x) {
+	return x == "" ? "null,null" : x;
+}
+
+{
+	if ($3 == "") $3 = osgrid_to_latlng($2)
+	if ($5 == "") $5 = osgrid_to_latlng($4)
+	if ($7 == "") $7 = osgrid_to_latlng($6)
+
+	# TODO - allow more than one of each.
+	parking = $3
+	takeoff = $5
+	landing = $7
+
+	printf("sites[%s] = create_site([%s, %s, %s, %s, %s, %s, %s, %s]);\n",
+		s($1), s($1), s($2), c($3), s($4), c($5), s($6), c($7), s($8));
+	#print "    sites[\"" $1 "\"] = {"
+	#print "        takeoff: create_takeoff(\"" $1 "\", " takeoff "),"
+	#if (landing!= "") {
+		#print "        landing: create_landing(\"" $1 "\", " landing "),"
+	#}
+	#print "        info: create_info(\"" $1 "\"),"
+	#print "    }"
+	#print "create_takeoff(\"" $1 "\", " $5 ")"
+	#print >"cells"
+	#print $1,takeoff,$6,landing >"coords"
+}
+
+END {
+	print "    return sites;"
+	print "}"
+}' >sites.js

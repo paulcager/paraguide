@@ -1,0 +1,28 @@
+#!/bin/bash
+
+DSC="D=$HOME/Downloads/DscSitesGuideSep2014.pdf"
+PSA="P=$HOME/Downloads/PSA Sites Guide July 2013_V4.pdf"
+
+pdftk "$DSC" cat 15-16 output guides/Broadlee_Bank.pdf
+pdftk "$DSC" "$PSA" cat D17-18 P12-13 output guides/Cat_s_Tor.pdf
+pdftk "$DSC" cat 19-20 output guides/Cocking_Tor.pdf
+pdftk "$DSC" cat 21-22 output guides/Curbar_Edge.pdf
+pdftk "$DSC" cat 23-24 output guides/Dale_Head.pdf
+pdftk "$DSC" cat 25-26 output guides/Eyam_Edge.pdf
+pdftk "$DSC" cat 27-28 output guides/Lord_s_Seat.pdf
+pdftk "$DSC" cat 29-30 output guides/Mam_Tor_NW.pdf
+pdftk "$DSC" cat 31-33 output guides/Mam_Tor_E.pdf
+pdftk "$DSC" cat 34-35 output guides/Treak_Cliff.pdf
+pdftk "$DSC" cat 34-35 output guides/Long_Cliff.pdf
+pdftk "$DSC" cat 36-38 output guides/Stanage_Edge.pdf
+pdftk "$DSC" cat 39-40 output guides/Bradwell.pdf
+
+
+pdftk "$PSA" cat 10-11 output guides/Bunster.pdf
+pdftk "$PSA" cat 14-15 output guides/Chelmorton.pdf
+pdftk "$PSA" cat 16-17 output guides/Back_of_Ecton.pdf
+pdftk "$PSA" cat 18-19 output guides/Edge_Top.pdf
+pdftk "$PSA" cat 21-22 output guides/High_Edge.pdf
+pdftk "$PSA" cat 23-24 output guides/High_Wheeldon.pdf
+pdftk "$PSA" cat 25-26 output guides/Shining_Tor.pdf
+pdftk "$PSA" cat 27-28 output guides/Wetton_Hill.pdf
