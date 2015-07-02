@@ -3,6 +3,8 @@
 DSC="D=$HOME/Downloads/DscSitesGuideSep2014.pdf"
 PSA="P=$HOME/Downloads/PSA Sites Guide July 2013_V4.pdf"
 
+mkdir -p guides
+
 pdftk "$DSC" cat 15-16 output guides/Broadlee_Bank.pdf
 pdftk "$DSC" "$PSA" cat D17-18 P12-13 output guides/Cat_s_Tor.pdf
 pdftk "$DSC" cat 19-20 output guides/Cocking_Tor.pdf
