@@ -3,6 +3,7 @@
 SHEET='https://spreadsheets.google.com/feeds/list/13blLictRsToqT7HReMA9IcUfHp3BzUPIhmgHadMmpW8/od6/public/full'
 export NODE_PATH=$HOME/geodesy/
 
+echo "Now obsolete?"; exit 2
 curl -s "$SHEET" |xmlstarlet sel  -T -t -m '/_:feed/_:entry' -m gsx:* -v .  -o '|' -b -n | gawk -F '|' '
 BEGIN {
 	OFS="|"

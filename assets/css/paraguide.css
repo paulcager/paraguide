@@ -2,26 +2,35 @@
 body {
   margin: 0;
   padding: 0;
-  background: #ccc;
 }
  
 #menucontainer {
   position: fixed;
-  width: 100%;
+  xxwidth: 100%;
   top: 5px;
+  background: #e0e0e0;
+  opacity: 0.75;
+  color: black;
+  padding: 0.25em 1em 0.25em 1em;
 }
+
 
 #menubar :hover {
-  background: #008000;
-  color: black;
+	background: #008000;
+	opacity: 1.0;
+	color: black;
 }
-
 
 #menubar {
   width: 50%;
   margin: 0 auto;
   opacity: 0.9;
-  background: #d0d0d0;
+  background: #808080;
+}
+
+#menubar:hover {
+	opacity: 1.0;
+	background: #404040;
 }
 
 .nav ul {
