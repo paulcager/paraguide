@@ -1,25 +1,30 @@
 package uk.paraguide;
 
 public class Location {
-	public double lat;
-	public double lon;
-	//public String osGrid;
+	public final double lat;
+	public final double lon;
+	public final String osGrid;
+	public final String latLng;
 	
-	
-	
-	public static Location fromString(String s) {
-		if (s == null || s.length() == 0) {
-			return null;
-		}
-		String[] parts = s.split(",");
-		if (parts.length != 2) {
-			throw new IllegalArgumentException(s);
-		}
-
-		return new Location(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]));
+	public static Location fromString(String latLng) {
+		return fromStrings("", latLng);
 	}
 	
-	public Location(double lat, double lon) {
+	public static Location fromStrings(String osGrid, String latLng) {
+		if (latLng == null || latLng.length() == 0) {
+			return null;
+		}
+		String[] parts = latLng.split(",");
+		if (parts.length != 2) {
+			throw new IllegalArgumentException(latLng);
+		}
+
+		return new Location(osGrid, latLng, Double.parseDouble(parts[0]), Double.parseDouble(parts[1]));
+	}
+	
+	public Location(String osGrid, String latLng, double lat, double lon) {
+		this.osGrid = osGrid;
+		this.latLng = latLng;
 		this.lat = lat;
 		this.lon = lon;
 	}

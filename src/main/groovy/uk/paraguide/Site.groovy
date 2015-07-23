@@ -22,9 +22,9 @@ public class Site {
 	public static Site fromXml(xmlEntry) {
 		return new Site(
 			xmlEntry.'gsx:place'.toString(),
-			list(xmlEntry.'gsx:parking'),
-			list(xmlEntry.'gsx:takeoff'),
-			list(xmlEntry.'gsx:landing'),
+			location(xmlEntry.'gsx:parkingosgrid', xmlEntry.'gsx:parking'),
+			location(xmlEntry.'gsx:takeoffosgrid', xmlEntry.'gsx:takeoff'),
+			location(xmlEntry.'gsx:landingosgrid', xmlEntry.'gsx:landing'),
 			wind(xmlEntry.'gsx:wind')
 		);
 	}
@@ -35,8 +35,8 @@ public class Site {
 				takeoff + ", landing=" + landing + ", wind=" + wind + "]";
 	}
 
-	private static List<Location> list(value) {
-		value.toString().split("  *").findAll{it.length() > 0}.collect{Location.fromString(it)}
+	private static List<Location> location(osGrid, latLngs) {
+		latLngs.toString().split("  *").findAll{it.length() > 0}.collect{Location.fromStrings(osGrid.toString(), it)}
 	}
 	
 	private static List<String> wind(value) {
