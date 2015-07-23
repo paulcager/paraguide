@@ -16,8 +16,7 @@
     <link rel='stylesheet' href='css/paraguide.css' type='text/css' media='all' />
   </head>
   <body>
-  <iframe  id="embedded-map" width="100%" height="98%" src="index-frame.html"> </iframe>
-  <#include "menu.ftl">
- 
+  	<iframe  id="embedded-map" width="100%" height="98%" src="index-frame.html"> </iframe>
+  	<#include "menu.ftl">
   </body>
 </html>

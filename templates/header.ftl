@@ -35,63 +35,58 @@
       var infoWindow = new google.maps.InfoWindow({ });
 
       function create_site(fields) {
-	  var i = 0;
-          var place = fields[i++];
-          var parkingOsGrid = fields[i++];
-	  var parkingLat = fields[i++];
-	  var parkingLng = fields[i++];
-	  var takeoffOsGrid = fields[i++];
-	  var takeoffLat = fields[i++];
-	  var takeoffLng = fields[i++];
-	  var landingOsGrid = fields[i++];
-	  var landingLat = fields[i++];
-	  var landingLng = fields[i++];
-	  var wind = fields[i++];
+		var i = 0;
+		var place = fields[i++];
+		var parking = fields[i++];
+		var takeoff = fields[i++];
+		var landing = fields[i++];
+		var wind = fields[i++];
 
-	  var takeoff = create_takeoff(place, takeoffLat, takeoffLng);
-	  create_info(place, takeoff, takeoffLat, takeoffLng);
+		// For time being, just take the first element of the list.
+		// Extend later.
+      	var takeoff = create_takeoff(place, takeoff.lat, takeoff.lng);
+      	create_info(place, takeoff, takeoff.lat, takeoff.lng);
 
-	  return {
-	      takeoff: takeoff,
-	      landing: create_landing(place, landingLat, landingLng)
-	  };
+      	return {
+          takeoff: takeoff,
+          landing: create_landing(place, landing.lat, landing.lon)
+      	};
       }
 
-      function create_info(place, takeoff, takeoffLat, takeoffLng) {
-	var icon = icon_url("large", place);
-	google.maps.event.addListener(takeoff, 'click', function() {
-	    infoWindow.setContent(
-		"<div>" +
-		  "<h1>" + place + "</h1>" +
+      function create_info(place, takeoff, takeoffLat, takeoffLon) {
+    	var icon = icon_url("large", place);
+    	google.maps.event.addListener(takeoff, 'click', function() {
+       	 infoWindow.setContent(
+        	"<div>" +
+          	"<h1>" + place + "</h1>" +
                   "<div style=\"padding: 0.5em;\">" +
                       "<img src=\"" + icon + "\"/>" +
                   "</div>" +
                   "<p>" +
                     "<a href=\"guides/" + safe_name(place) + ".pdf\" target=\"guide\">Guide</a><br/>" +
-		    "<a href=\"" + maps_url(takeoffLat, takeoffLng, 9, false) + "\">Directions</a><br/>" +
-		    "<a href=\"" + maps_url(takeoffLat, takeoffLng, 15, true) + "\">Satellite View</a>" +
+            "<a href=\"" + maps_url(takeoffLat, takeoffLon, 9, false) + "\">Directions</a><br/>" +
+            "<a href=\"" + maps_url(takeoffLat, takeoffLon, 15, true) + "\">Satellite View</a>" +
                   "</p>" +
-		"</div>");
-	    infoWindow.open(map,takeoff);
-        });
+        	"</div>");
+         infoWindow.open(map,takeoff);
+      	});
       }
       function create_takeoff(place, lat, lng) {
-	var icon = icon_url("small", place);
-	return new google.maps.Marker({
-		position: new google.maps.LatLng(lat, lng),
-		map: map,
-		title: place,
-		//icon: {url: "icons/Bunster.png", origin: new google.maps.Point(0,0), size: new google.maps.Size(64, 64)}
-		icon: {url: icon}
-       });
+    	var icon = icon_url("small", place);
+    	return new google.maps.Marker({
+	        position: new google.maps.LatLng(lat, lng),
+    	    map: map,
+        	title: place,
+        	icon: {url: icon}
+       	});
       }
       function create_landing(place, lat, lng) {
-	return new google.maps.Marker({
-		position: new google.maps.LatLng(lat, lng),
-		map: map,
-		icon: pinImage,
-		title: place
-	});
+    	return new google.maps.Marker({
+        	position: new google.maps.LatLng(lat, lng),
+        	map: map,
+        	icon: pinImage,
+        	title: place
+	  	});
       }
 
       function icon_url(type, place) {
@@ -102,8 +97,8 @@
       }
 
       function maps_url(lat, lng, zoom, satellite) {
-	//return "https://www.google.co.uk/maps/place/" + String(lat) + "," + String(lng) + "/@" + String(lat) + "," + String(lng) + "," + String(zoom) + "z";
-	return "https://www.google.com/maps/embed/v1/place?key=AIzaSyDYEr0NL0JlKdlNchfiRmCPJVDL9bRqsZc&q=" + String(lat) + "," + String(lng) + "&zoom=" + String(zoom) + "z&maptype=" + (satellite ? "satellite" : "roadmap");
+    	//return "https://www.google.co.uk/maps/place/" + String(lat) + "," + String(lng) + "/@" + String(lat) + "," + String(lng) + "," + String(zoom) + "z";
+    	return "https://www.google.com/maps/embed/v1/place?key=AIzaSyDYEr0NL0JlKdlNchfiRmCPJVDL9bRqsZc&q=" + String(lat) + "," + String(lng) + "&zoom=" + String(zoom) + "z&maptype=" + (satellite ? "satellite" : "roadmap");
       }
 
       function initialize() {

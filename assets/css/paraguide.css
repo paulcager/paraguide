@@ -4,6 +4,12 @@ body {
   padding: 0;
 }
  
+#map-canvas {
+  height: 100%;
+  margin: 0px;
+  padding: 0px
+}
+
 #menucontainer {
   position: fixed;
   xxwidth: 100%;
