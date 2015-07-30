@@ -29,6 +29,22 @@ public class Location {
 		this.lon = lon;
 	}
 
+	public double getLat() {
+		return lat;
+	}
+
+	public double getLon() {
+		return lon;
+	}
+
+	public String getOsGrid() {
+		return osGrid;
+	}
+
+	public String getLatLon() {
+		return latLon;
+	}
+
 	@Override
 	public String toString() {
 		return lat + "," + lon;

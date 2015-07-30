@@ -19,6 +19,26 @@ public class Site {
 		this.wind = wind;
 	}
 	
+	public String getName() {
+		return name;
+	}
+
+	public List<Location> getParking() {
+		return parking;
+	}
+
+	public List<Location> getTakeoff() {
+		return takeoff;
+	}
+
+	public List<Location> getLanding() {
+		return landing;
+	}
+
+	public List<String> getWind() {
+		return wind;
+	}
+
 	public static Site fromXml(xmlEntry) {
 		return new Site(
 			xmlEntry.'gsx:place'.toString(),

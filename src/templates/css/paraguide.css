@@ -1,0 +1,76 @@
+
+body {
+  margin: 0;
+  padding: 0;
+}
+ 
+#map-canvas {
+  height: 100%;
+  margin: 0px;
+  padding: 0px
+}
+
+#menucontainer {
+  position: fixed;
+  xxwidth: 100%;
+  top: 1em;
+  left: 1em;
+  background: #e0e0e0;
+  opacity: 0.75;
+  color: black;
+  padding: 0.25em 1em 0.25em 1em;
+}
+
+
+#menubar :hover {
+	background: #008000;
+	opacity: 1.0;
+	color: black;
+}
+
+#menubar {
+  width: 50%;
+  margin: 0 auto;
+  opacity: 0.9;
+  background: #808080;
+}
+
+#menubar:hover {
+	opacity: 1.0;
+	background: #404040;
+}
+
+.nav ul {
+  list-style: none;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+.nav li {
+  font-family: sans-serif;
+}
+ 
+.nav a {
+  text-decoration: none;
+  color: #fff;
+  display: block;
+}
+ 
+
+@media screen and (min-width: 600px) {
+  .nav li {
+    width: 6em;
+    border-bottom: none;
+    height: 200%;
+    line-height: 200%;
+  }
+ 
+  .nav li {
+    display: inline-block;
+    margin-right: -4px;
+  }
+  .nav ul {
+    overflow: auto;
+    margin: 0 auto;
+  }
+}
