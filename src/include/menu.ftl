@@ -2,13 +2,16 @@
   <nav id="my-menu">
         <ul>
           <li><a href="/">Home</a></li>
-          <li><span>Site Guides</span>
+          <li><span>Go to site...</span>
+            <ul>
+                <#include "menu_sites.ftl">
+            </ul>
+          </li>
+          <li><span>Guides</span>
 			<ul>
 				<#include "menu_guides.ftl">
 			</ul>
 		  </li>
-          <li><a href="#">Show Landing</a><input type="checkbox" class="Toggle" /></li>
-          <li><a href="#">Show Parking</a><input type="checkbox" class="Toggle" checked="checked" /></li>
           <li><span>Weather</span>
             <ul>
                 <li><a href="http://www.xcweather.co.uk/forecast/castleton_derbyshire">XCWeather</a></li>
@@ -18,6 +21,8 @@
                 <li><a href="http://lindleyeducationaltrust.org/hollowford/weather/TSimage.jpg">MamCam</a></li>
             </ul>
           </li>
+          <li><a href="#">Show Landing</a><input type="checkbox" class="Toggle" /></li>
+          <li><a href="#">Show Parking</a><input type="checkbox" class="Toggle" checked="checked" /></li>
           <li><span>Clubs</span>
             <ul>
                 <li><a href="http://derbyshiresoaringclub.com/smf/">Derbyshire Soaring Club</a></li>

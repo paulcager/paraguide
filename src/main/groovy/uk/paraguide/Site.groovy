@@ -5,6 +5,7 @@ import java.util.List;
 
 public class Site {
 	public final String name;
+	public final String id;
 	public final List<Location> parking;
 	public final List<Location> takeoff;
 	public final List<Location> landing;
@@ -13,6 +14,7 @@ public class Site {
 	public Site(String name, List<Location> parking, List<Location> takeoff,
 			List<Location> landing, List<String> wind) {
 		this.name = name;
+		this.id = name.replaceAll("[^A-Za-z0-9]", "_");
 		this.parking = parking;
 		this.takeoff = takeoff;
 		this.landing = landing;
@@ -38,29 +40,16 @@ public class Site {
 	public List<String> getWind() {
 		return wind;
 	}
-
-	public static Site fromXml(xmlEntry) {
-		return new Site(
-			xmlEntry.'gsx:place'.toString(),
-			location(xmlEntry.'gsx:parkingosgrid', xmlEntry.'gsx:parking'),
-			location(xmlEntry.'gsx:takeoffosgrid', xmlEntry.'gsx:takeoff'),
-			location(xmlEntry.'gsx:landingosgrid', xmlEntry.'gsx:landing'),
-			wind(xmlEntry.'gsx:wind')
-		);
-	}
 	
+	public String getId() {
+		return id;
+	}
+
 	@Override
 	public String toString() {
 		return "Site [name=" + name + ", parking=" + parking + ", takeoff=" +
 				takeoff + ", landing=" + landing + ", wind=" + wind + "]";
 	}
 
-	private static List<Location> location(osGrid, latLngs) {
-		latLngs.toString().split("  *").findAll{it.length() > 0}.collect{Location.fromStrings(osGrid.toString(), it)}
-	}
-	
-	private static List<String> wind(value) {
-		value.toString().split(", *").findAll{it.length() > 0} as List<String>
-	}
 
 }

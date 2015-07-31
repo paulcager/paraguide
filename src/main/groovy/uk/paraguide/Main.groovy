@@ -12,8 +12,9 @@ import freemarker.template.TemplateExceptionHandler
 public class Main {
 	private static final String spreadsheet = "https://spreadsheets.google.com/feeds/list/13blLictRsToqT7HReMA9IcUfHp3BzUPIhmgHadMmpW8/od6/public/full";
 	public static void main(String[] args) {
-		SiteTable sites = SiteTable.fromUrl(new URL(spreadsheet));
-		Map<String, Object> model = Collections.singletonMap("sites", sites.sites);
+		Map<String, Site> sites = SiteXml.load(new URL(spreadsheet)).sites;
+		println "Sites: ${sites}"
+		Map<String, Object> model = Collections.singletonMap("sites", sites.values());
 		TemplateProcessor processor = new TemplateProcessor(Paths.get("src/templates"), Paths.get("tmp/out"), model);
 		processor.transform();
 	}
