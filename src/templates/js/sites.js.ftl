@@ -5,9 +5,9 @@ function create_sites() {
     sites["${site.id}"] = create_site(
         "${site.id}",
         "${site.name}", 
-        [<#list site.parking as p>{osGrid: "${p.osGrid}", lat: ${p.lat?c}, lon: ${p.lon?c} }<#sep>, </#list>],
-        [<#list site.takeoff as t>{osGrid: "${t.osGrid}", lat: ${t.lat?c}, lon: ${t.lon?c} }<#sep>, </#list>],
-        [<#list site.landing as l>{osGrid: "${l.osGrid}", lat: ${l.lat?c}, lon: ${l.lon?c} }<#sep>, </#list>],  
+        [<#list site.parking as p>{easting: "${p.easting?c}", northing: "${p.northing?c}", lat: ${p.lat?c}, lon: ${p.lon?c} }<#sep>, </#list>],
+        [<#list site.takeoff as t>{easting: "${t.easting?c}", northing: "${t.northing?c}", lat: ${t.lat?c}, lon: ${t.lon?c} }<#sep>, </#list>],
+        [<#list site.landing as l>{easting: "${l.easting?c}", northing: "${l.northing?c}", lat: ${l.lat?c}, lon: ${l.lon?c} }<#sep>, </#list>],  
         [<#list site.wind as w>"${w}"<#sep>, </#list>]
     );    
     </#list>
@@ -19,17 +19,16 @@ function create_sites() {
       "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=L|" + landColor,
       new google.maps.Size(21, 34),
       new google.maps.Point(0,0),
-      new google.maps.Point(10, 34));
+      new google.maps.Point(10, 34)
+  );
 
   var infoWindow = new google.maps.InfoWindow({ });
 
   function create_site(id, place, parking, takeoff, landing, wind) {
 
-    // For time being, just take the first element of the list.
-    // Extend later.
       var markers = create_takeoff(place, takeoff);
       var t = takeoff[0];
-      var info = create_info(id, place, markers[0], t.lat, t.lon);
+      var info = create_info(id, place, markers[0], t);
       return {
           takeoff: markers,
           landing: create_landing(place, landing.lat, landing.lon),
@@ -46,8 +45,11 @@ function create_sites() {
     $( '#url-dialog' ).dialog();
   }
 
-  function create_info(id, place, marker, takeoffLat, takeoffLon) {
+  function create_info(id, place, marker, takeoff) {
     var icon = icon_url("large", place);
+    var takeoffLat = takeoff.lat
+    var takeoffLon =takeoff.lon
+    var takeoffOsGrid = takeoff.osGrid
     var f = function() {
         infoWindow.setContent(
             "<div>" +
@@ -59,7 +61,9 @@ function create_sites() {
                     "<a href=\"guides/" + safe_name(place) + ".pdf\" target=\"guide\">Guide</a><br/>" +
                     "<a href=\"" + maps_url(takeoffLat, takeoffLon, 9, false) + "\">Directions</a><br/>" +
                     "<a href=\"" + maps_url(takeoffLat, takeoffLon, 15, true) + "\">Satellite View</a><br/>" +
-                    "<a href=\"javascript:show_url('" + id + "')\">Url</a><br/>" +
+                    <!-- "<a href=\"http://www.streetmap.co.uk/ids.srf?mapp=map.srf&searchp=ids&name=" + takeoffLat + "," + takeoffLon + "&type=LatLong\">OS Map</a><br/>" + -->
+                    "<a href=\"http://www.streetmap.co.uk/grid/" + takeoff.easting + "," + takeoff.northing + "_115\">OS Map</a><br/>" +
+                    "<a href=\"javascript:show_url('" + id + "')\">Bookmark Site</a><br/>" +
                   "</p>" +
             "</div>");
         infoWindow.open(map,marker);
@@ -78,7 +82,8 @@ function create_sites() {
             position: new google.maps.LatLng(t.lat, t.lon),
             map: map,
             title: place,
-            icon: {url: icon}
+            icon: {url: icon, anchor: new google.maps.Point(12, 12)},
+            draggable: false,
         });
         markers.push(marker);
     }

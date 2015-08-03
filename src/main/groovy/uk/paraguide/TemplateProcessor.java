@@ -59,13 +59,11 @@ class TemplateProcessor {
 			output.toFile().mkdirs();
 		} else if (p.toString().endsWith(".ftl")) {
 			Path renamedOutput = Paths.get(output.toString().replaceFirst("\\.ftl$", "")); 
-			System.out.println("Expand to " + renamedOutput);
 			Template temp = cfg.getTemplate(templateDirectory.relativize(p).toString());
 			try (PrintWriter pw = new PrintWriter(Files.newBufferedWriter(renamedOutput))) {
 				temp.process(model, new PrintWriter(pw));
 			}
 		} else {
-			System.out.println("Copy " + output);
 			Files.copy(p, output, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
 		}
 	}

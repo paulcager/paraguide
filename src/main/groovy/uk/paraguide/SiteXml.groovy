@@ -1,5 +1,6 @@
 package uk.paraguide
 
+import uk.me.jstott.jcoord.LatLng;
 import groovy.util.slurpersupport.GPathResult
 
 class SiteXml {
@@ -27,21 +28,22 @@ class SiteXml {
 	} 
 	
 	private Site decodeSiteEntry(xmlEntry) {
+//		println xmlEntry.'gsx:place'.toString()
 		return new Site(
 			xmlEntry.'gsx:place'.toString(),
-			location(xmlEntry.'gsx:parkingosgrid', xmlEntry.'gsx:parking'),
-			location(xmlEntry.'gsx:takeoffosgrid', xmlEntry.'gsx:takeoff'),
-			location(xmlEntry.'gsx:landingosgrid', xmlEntry.'gsx:landing'),
+			location(xmlEntry.'gsx:parking'),
+			location(xmlEntry.'gsx:takeoff'),
+			location(xmlEntry.'gsx:landing'),
 			wind(xmlEntry.'gsx:wind')
 		);
 	}
 	
-	private static List<Location> location(osGrid, latLngs) {
-		latLngs.toString().split("  *").findAll{it.length() > 0}.collect{Location.fromStrings(osGrid.toString(), it)}
+	private static List<Location> location(latLngs) {
+		latLngs.toString().split("\\s+").findAll{it.length() > 0}.collect{Location.fromString(it)}
 	}
 	
 	private static List<String> wind(value) {
-		value.toString().split(", *").findAll{it.length() > 0} as List<String>
+		value.toString().split("[\\s,]+").findAll{it.length() > 0} as List<String>
 	}
 
 }
