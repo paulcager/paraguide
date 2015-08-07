@@ -1,3 +1,21 @@
+var sites = {}
+var landColor = "20e000";
+var pinImage = new google.maps.MarkerImage(
+    "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=L|" + landColor,
+    new google.maps.Size(21, 34),
+    new google.maps.Point(0,0),
+    new google.maps.Point(10, 34)
+);
+
+var parkingImage = new google.maps.MarkerImage(
+    "img/parking.png",
+    new google.maps.Size(21, 34),
+    new google.maps.Point(0,0),
+    new google.maps.Point(10, 34)
+);
+
+var infoWindow = new google.maps.InfoWindow({ });
+
 function create_sites() {
     var sites = {};
     <#list sites as site>
@@ -14,29 +32,28 @@ function create_sites() {
     return sites;
 }
 
-  var landColor = "20e000";
-  var pinImage = new google.maps.MarkerImage(
-      "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=L|" + landColor,
-      new google.maps.Size(21, 34),
-      new google.maps.Point(0,0),
-      new google.maps.Point(10, 34)
-  );
-
-  var infoWindow = new google.maps.InfoWindow({ });
-
-  function create_site(id, place, parking, takeoff, landing, wind) {
-
-      var markers = create_takeoff(place, takeoff);
-      var t = takeoff[0];
-      var info = create_info(id, place, markers[0], t);
-      return {
-          takeoff: markers,
-          landing: create_landing(place, landing.lat, landing.lon),
-          info: info
-      };
+function create_site(id, name, parkings, takeoffs, landings, wind) {
+      var icon = icon_url("small", name);
+      site = {
+        id          : id,
+        name        : name,
+        parkings    : create_markers(id, name, parkings, parkingImage), 
+        takeoffs    : create_markers(id, name, takeoffs, {url: icon, anchor: new google.maps.Point(12, 12)}),
+        landings    : create_markers(id, name, landings, pinImage),
+      }
+      
+      site.info = site.takeoffs[0].info;
+      site.setLandingsVisible = function(vis) {
+        var i;
+        for (i = 0; i < landings.length; i++) {
+            console.log("t.marker.map = " + t.marker.map); 
+            t.marker.map = null;
+        }
+      } 
+      return site;
   }
   
-  function show_url(id) {
+function show_url(id) {
     var url = "#" + id;
     $( '#url-dialog' ).html(
         "<p>Copy the following link to share.</p>" +
@@ -45,59 +62,89 @@ function create_sites() {
     $( '#url-dialog' ).dialog();
   }
 
-  function create_info(id, place, marker, takeoff) {
-    var icon = icon_url("large", place);
-    var takeoffLat = takeoff.lat
-    var takeoffLon =takeoff.lon
-    var takeoffOsGrid = takeoff.osGrid
+function add_info_window(place) {
+    var name = place.name;
+    var id = place.id;
+    var marker = place.marker;
+    var icon = icon_url("large", name);
+    var lat = place.lat;
+    var lon = place.lon;
+    var osGrid = place.osGrid;
     var f = function() {
         infoWindow.setContent(
             "<div>" +
-              "<h1>" + place + "</h1>" +
+              "<h1>" + name + "</h1>" +
                   "<div style=\"padding: 0.5em;\">" +
                       "<img src=\"" + icon + "\"/>" +
                   "</div>" +
                   "<p>" +
-                    "<a href=\"guides/" + safe_name(place) + ".pdf\" target=\"guide\">Guide</a><br/>" +
-                    "<a href=\"" + maps_url(takeoffLat, takeoffLon, 9, false) + "\">Directions</a><br/>" +
-                    "<a href=\"" + maps_url(takeoffLat, takeoffLon, 15, true) + "\">Satellite View</a><br/>" +
-                    <!-- "<a href=\"http://www.streetmap.co.uk/ids.srf?mapp=map.srf&searchp=ids&name=" + takeoffLat + "," + takeoffLon + "&type=LatLong\">OS Map</a><br/>" + -->
-                    "<a href=\"http://www.streetmap.co.uk/grid/" + takeoff.easting + "," + takeoff.northing + "_115\">OS Map</a><br/>" +
+                    "<a href=\"guides/" + id + ".pdf\" target=\"guide\">Guide</a><br/>" +
+                    "<a href=\"" + maps_url(lat, lon, 9, false) + "\">Directions</a><br/>" +
+                    "<a href=\"" + maps_url(lat, lon, 15, true) + "\">Satellite View</a><br/>" +
+                    <!-- "<a href=\"http://www.streetmap.co.uk/ids.srf?mapp=map.srf&searchp=ids&name=" + lat + "," + lon + "&type=LatLong\">OS Map</a><br/>" + -->
+                    "<a href=\"http://www.streetmap.co.uk/grid/" + place.easting + "," + place.northing + "_115\">OS Map</a><br/>" +
                     "<a href=\"javascript:show_url('" + id + "')\">Bookmark Site</a><br/>" +
                   "</p>" +
             "</div>");
         infoWindow.open(map,marker);
       };
       google.maps.event.addListener(marker, 'click', f);
-      return f;
+      place.info = f;
   }
   
-  function create_takeoff(place, takeoff) {
-    var markers = [];
+  function create_markers(id, name, places, icon) {
     var i;
-    for (i = 0; i < takeoff.length; i++) {
-        var t = takeoff[i];
-        var icon = icon_url("small", place);
+    for (i = 0; i < places.length; i++) {
+        var t = places[i];
+        t.id = id;
+        t.name = name;
         var marker = new google.maps.Marker({
             position: new google.maps.LatLng(t.lat, t.lon),
             map: map,
-            title: place,
-            icon: {url: icon, anchor: new google.maps.Point(12, 12)},
+            title: name,
+            icon: icon,
             draggable: false,
         });
-        markers.push(marker);
+        t.marker = marker;
+        add_info_window(t); 
     }
-    return markers;
+    return places;
   }
   
-  function create_landing(place, lat, lng) {
-    return new google.maps.Marker({
-        position: new google.maps.LatLng(lat, lng),
-        map: map,
-        icon: pinImage,
-        title: place
-      });
+  function create_landings(id, place, landings) {
+    var i;
+    for (i = 0; i < landings.length; i++) {
+        var l = landings[i];
+        var icon = icon_url("small", place);
+        var marker = new google.maps.Marker({
+            position: new google.maps.LatLng(l.lat, l.lon),
+            map: map,
+            title: place,
+            icon: pinImage,
+            draggable: false,
+        });
+        l.marker = marker;
+    }
+    return landings;
   }
+
+  function create_parkings(id, place, landings) {
+    var i;
+    for (i = 0; i < landings.length; i++) {
+        var l = landings[i];
+        var icon = icon_url("small", place);
+        var marker = new google.maps.Marker({
+            position: new google.maps.LatLng(l.lat, l.lon),
+            map: map,
+            title: place,
+            icon: parkingImage,
+            draggable: false,
+        });
+        l.marker = marker;
+    }
+    return landings;
+  }
+
 
   function icon_url(type, place) {
       return "icons/" + type + "/" + safe_name(place) + ".png";
@@ -127,8 +174,15 @@ function create_sites() {
     }
     map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
     sites = create_sites();
-    console.log("Frag: " + window.location.hash.substring(1));
     if (sites[window.location.hash.substring(1)]) {
         sites[window.location.hash.substring(1)].info();
+    }
+ }
+
+ function toggleLanding() {
+    var vis = $('#toggleLanding').prop('checked');
+    var site
+    for (sites[site] in sites) {
+        site.setLandingsVisible(vis);
     }
  }

@@ -21,8 +21,12 @@ class SiteXml {
 	public Map<String, Site> getSites() {
 		Map<String, Site> sites = new TreeMap<>();
 		for (def entry : xml.entry) {
-			Site site = decodeSiteEntry(entry);
-			sites.put(site.id, site);
+			try {
+				Site site = decodeSiteEntry(entry);
+				sites.put(site.id, site);
+			} catch (Exception e) {
+				System.err.println("Error in entry ${entry}")
+			}
 		}
 		return sites;
 	} 

@@ -27,12 +27,5 @@ public class Main {
 		}
 		
 		println "Success!"
-		def latLon = new OSRef("SJ920530").toLatLng();
-		println latLon;
-		latLon.toWGS84();
-		println latLon;           // <- this is the best one.
-		latLon.toOSGB36()
-		def osRef = latLon.toOSRef()
-		println Math.round(osRef.getEasting()) + "," + Math.round(osRef.getNorthing()) 
 	}
 }

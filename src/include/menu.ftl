@@ -19,6 +19,8 @@
                     <li><a href="http://www.raintoday.co.uk/mobile">Rain Today</a></li>
                     <li><a href="http://rasp.inn.leedsmet.ac.uk/">RASP</a></li>
                     <li><a href="https://www.wendywindblows.com/mobile/">Wendy</a></li>
+                    <li><a href="http://www.windfinder.com/forecast/the_roaches">Windfinder</a></li>
+                    <li><a href="http://earth.nullschool.net/#current/wind/surface/level/orthographic=-4.35,54.90,3000">nullschool</a></li>
                     <span>Webcams</span>
                     <li><a href="http://lindleyeducationaltrust.org/hollowford/weather/TSimage.jpg">MamCam</a></li>
                     <li><a href="http://xnet.hsl.gov.uk/siteweather/image00002.jpg">Buxton, Harpur Hill</a></li>
@@ -28,8 +30,8 @@
                     
                 </ul>
               </li>
-              <li><a href="#">Show Landing</a><input type="checkbox" class="Toggle" /></li>
-              <li><a href="#">Show Parking</a><input type="checkbox" class="Toggle" checked="checked" /></li>
+              <li><span>Show Landing</span><input id="toggleLanding" type="checkbox" class="Toggle" onClick="javascript: toggleLanding()"/></li>
+              <li><span>Show Parking</span><input id="toggleParking" type="checkbox" class="Toggle" checked="checked" onClick="javascript: alert('mm')"/></li>
               <li><span>Clubs</span>
                 <ul>
                     <li><a href="http://derbyshiresoaringclub.com/smf/">Derbyshire Soaring Club</a></li>
