@@ -31,7 +31,7 @@
          })
       });
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&amp;signed_in=true"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry,places&ext=.js"></script>
     <script src="js/sites.js"></script>
     <script>
      google.maps.event.addDomListener(window, 'load', initialize);

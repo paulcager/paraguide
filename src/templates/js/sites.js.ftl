@@ -43,13 +43,7 @@ function create_site(id, name, parkings, takeoffs, landings, wind) {
       }
       
       site.info = site.takeoffs[0].info;
-      site.setLandingsVisible = function(vis) {
-        var i;
-        for (i = 0; i < landings.length; i++) {
-            console.log("t.marker.map = " + t.marker.map); 
-            t.marker.map = null;
-        }
-      } 
+      
       return site;
   }
   
@@ -181,8 +175,24 @@ function add_info_window(place) {
 
  function toggleLanding() {
     var vis = $('#toggleLanding').prop('checked');
-    var site
-    for (sites[site] in sites) {
-        site.setLandingsVisible(vis);
+    var s, site
+    for (s in sites) {
+        site = sites[s];
+        var i;
+        for (i = 0; i < site.landings.length; i++) {
+            site.landings[i].marker.setMap(vis ? map : null);
+        }
+    }
+ }
+ 
+function toggleParking() {
+    var vis = $('#toggleParking').prop('checked');
+    var s, site
+    for (s in sites) {
+        site = sites[s];
+        var i;
+        for (i = 0; i < site.parkings.length; i++) {
+            site.parkings[i].marker.setMap(vis ? map : null);
+        }
     }
  }

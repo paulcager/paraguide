@@ -30,8 +30,8 @@
                     
                 </ul>
               </li>
-              <li><span>Show Landing</span><input id="toggleLanding" type="checkbox" class="Toggle" onClick="javascript: toggleLanding()"/></li>
-              <li><span>Show Parking</span><input id="toggleParking" type="checkbox" class="Toggle" checked="checked" onClick="javascript: alert('mm')"/></li>
+              <li><span>Show Landing</span><input id="toggleLanding" type="checkbox" class="Toggle" checked="checked" onClick="javascript: toggleLanding()"/></li>
+              <li><span>Show Parking</span><input id="toggleParking" type="checkbox" class="Toggle" checked="checked" onClick="javascript: toggleParking()"/></li>
               <li><span>Clubs</span>
                 <ul>
                     <li><a href="http://derbyshiresoaringclub.com/smf/">Derbyshire Soaring Club</a></li>
