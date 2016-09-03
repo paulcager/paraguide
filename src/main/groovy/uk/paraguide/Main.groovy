@@ -6,6 +6,8 @@ import uk.me.jstott.jcoord.OSRef
 
 public class Main {
 	private static final String spreadsheet = "https://spreadsheets.google.com/feeds/list/13blLictRsToqT7HReMA9IcUfHp3BzUPIhmgHadMmpW8/od6/public/full";
+	// https://sheets.googleapis.com/v4/spreadsheets/13blLictRsToqT7HReMA9IcUfHp3BzUPIhmgHadMmpW8/values/Places2?key=AIzaSyDYEr0NL0JlKdlNchfiRmCPJVDL9bRqsZc
+	
 	private static final int SMALL_ICON_SIZE = 24;
 	private static final int LARGE_ICON_SIZE = 64;
 	

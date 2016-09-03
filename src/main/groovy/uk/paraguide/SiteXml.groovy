@@ -24,6 +24,7 @@ class SiteXml {
 			try {
 				Site site = decodeSiteEntry(entry);
 				sites.put(site.id, site);
+				println site.id
 			} catch (Exception e) {
 				System.err.println("Error in entry ${entry}")
 			}

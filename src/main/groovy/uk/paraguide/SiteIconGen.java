@@ -45,6 +45,7 @@ class SiteIconGen {
 		}
 
 		g.dispose();
+		file.getParentFile().mkdirs();
 		ImageIO.write(bi, "png", file);
 	}
 	
