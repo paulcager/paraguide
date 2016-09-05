@@ -112,7 +112,7 @@ function add_info_window(place) {
         var icon = icon_url("small", place);
         var marker = new google.maps.Marker({
             position: new google.maps.LatLng(l.lat, l.lon),
-            map: map,
+            map: null, // map,
             title: place,
             icon: pinImage,
             draggable: false,
@@ -129,7 +129,7 @@ function add_info_window(place) {
         var icon = icon_url("small", place);
         var marker = new google.maps.Marker({
             position: new google.maps.LatLng(l.lat, l.lon),
-            map: map,
+            map: null, //map,
             title: place,
             icon: parkingImage,
             draggable: false,
@@ -159,7 +159,7 @@ function add_info_window(place) {
   function initialize() {
     var myLatlng = new google.maps.LatLng(53.23455851981886,-1.8269212925847522);
     var mapOptions = {
-      zoom: 10,
+      zoom: 8,
       center: myLatlng,
       mapTypeControlOptions: {
         style: google.maps.MapTypeControlStyle.DEFAULT,
@@ -171,6 +171,8 @@ function add_info_window(place) {
     if (sites[window.location.hash.substring(1)]) {
         sites[window.location.hash.substring(1)].info();
     }
+    toggleLanding()
+    toggleParking()
  }
 
  function toggleLanding() {

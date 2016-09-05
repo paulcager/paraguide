@@ -1,30 +1,61 @@
 #!/bin/bash
 
-DSC="D=$HOME/Downloads/DscSitesGuideSep2014.pdf"
-PSA="P=$HOME/Downloads/PSA Sites Guide July 2013_V4.pdf"
+OUT=src/templates/guides
+DSC="D=$OUT/DscSitesGuideSep2014.pdf"
+PSA="P=$OUT/PSASitesGuideJuly2013_V4.pdf"
+LMSC='http://www.longmynd.org/?page_id='
 
-mkdir -p guides
+mkdir -p $OUT
+cp $HOME/Downloads/DscSitesGuideSep2014.pdf $OUT/
+cp "$HOME/Downloads/PSA Sites Guide July 2013_V4.pdf" $OUT/PSASitesGuideJuly2013_V4.pdf
 
-pdftk "$DSC" cat 15-16 output guides/Broadlee_Bank.pdf
-pdftk "$DSC" "$PSA" cat D17-18 P12-13 output guides/Cat_s_Tor.pdf
-pdftk "$DSC" cat 19-20 output guides/Cocking_Tor.pdf
-pdftk "$DSC" cat 21-22 output guides/Curbar_Edge.pdf
-pdftk "$DSC" cat 23-24 output guides/Dale_Head.pdf
-pdftk "$DSC" cat 25-26 output guides/Eyam_Edge.pdf
-pdftk "$DSC" cat 27-28 output guides/Lord_s_Seat.pdf
-pdftk "$DSC" cat 29-30 output guides/Mam_Tor_NW.pdf
-pdftk "$DSC" cat 31-33 output guides/Mam_Tor_E.pdf
-pdftk "$DSC" cat 34-35 output guides/Treak_Cliff.pdf
-pdftk "$DSC" cat 34-35 output guides/Long_Cliff.pdf
-pdftk "$DSC" cat 36-38 output guides/Stanage_Edge.pdf
-pdftk "$DSC" cat 39-40 output guides/Bradwell.pdf
+lmsc_pdf() {
+    JPG=${3-`echo $2 | sed 's/_/-/g'`} 
+    URLS=`for i in $1; do echo $LMSC$i; done`
+    curl $URLS |
+        sed '/<.head/s%^%<style> #header-container, #sidebar-shell-1, #comments { display: none; } #container { padding-left: 0em !IMPORTANT; } </style>%' |
+        sed '/div id="wrapper/s/wrapper/del-wrapper/' |
+        sed '$s%^%<img src="http://www.longmynd.org/wp-content/uploads/2013/02/'$JPG.jpg'" />%' |
+        tee $OUT/$2.html |
+        ~/wkhtmltox/bin/wkhtmltopdf -l --zoom 0.75 -n --print-media-type --disable-forms - $OUT/$2.pdf
+}
+
+# sed '/<footer>/s%^%<img src="http://www.longmynd.org/wp-content/uploads/2013/02/'$JPG.jpg'" />%' |
+
+lmsc_pdf 1202 Black_Knoll 
+lmsc_pdf 294 Caer_Caradoc
+lmsc_pdf 278 Camlo
+lmsc_pdf 280 Clatter
+lmsc_pdf 296 Clunbury
+lmsc_pdf 272 Corndon
+lmsc_pdf 288 Lan_Fawr
+lmsc_pdf 290 The_Lawley Lawley-site-guide
+lmsc_pdf 286 Llandinam
+lmsc_pdf 284 Long_Mynd
+lmsc_pdf 298 Sarn
+lmsc_pdf 282 Shepherds_Tump
+lmsc_pdf "292 274" The_Wrekin Wrekin
+  
+pdftk "$DSC" cat 15-16 output $OUT/Broadlee_Bank.pdf
+pdftk "$DSC" "$PSA" cat D17-18 P12-13 output $OUT/Cat_s_Tor.pdf
+pdftk "$DSC" cat 19-20 output $OUT/Cocking_Tor.pdf
+pdftk "$DSC" cat 21-22 output $OUT/Curbar_Edge.pdf
+pdftk "$DSC" cat 23-24 output $OUT/Dale_Head.pdf
+pdftk "$DSC" cat 25-26 output $OUT/Eyam_Edge.pdf
+pdftk "$DSC" cat 27-28 output $OUT/Lord_s_Seat.pdf
+pdftk "$DSC" cat 29-30 output $OUT/Mam_Tor_NW.pdf
+pdftk "$DSC" cat 31-33 output $OUT/Mam_Tor_E.pdf
+pdftk "$DSC" cat 34-35 output $OUT/Treak_Cliff.pdf
+pdftk "$DSC" cat 34-35 output $OUT/Long_Cliff.pdf
+pdftk "$DSC" cat 36-38 output $OUT/Stanage_Edge.pdf
+pdftk "$DSC" cat 39-40 output $OUT/Bradwell.pdf
 
 
-pdftk "$PSA" cat 10-11 output guides/Bunster.pdf
-pdftk "$PSA" cat 14-15 output guides/Chelmorton.pdf
-pdftk "$PSA" cat 16-17 output guides/Back_of_Ecton.pdf
-pdftk "$PSA" cat 18-19 output guides/Edge_Top.pdf
-pdftk "$PSA" cat 21-22 output guides/High_Edge.pdf
-pdftk "$PSA" cat 23-24 output guides/High_Wheeldon.pdf
-pdftk "$PSA" cat 25-26 output guides/Shining_Tor.pdf
-pdftk "$PSA" cat 27-28 output guides/Wetton_Hill.pdf
+pdftk "$PSA" cat 10-11 output $OUT/Bunster.pdf
+pdftk "$PSA" cat 14-15 output $OUT/Chelmorton.pdf
+pdftk "$PSA" cat 16-17 output $OUT/Back_of_Ecton.pdf
+pdftk "$PSA" cat 18-19 output $OUT/Edge_Top.pdf
+pdftk "$PSA" cat 21-22 output $OUT/High_Edge.pdf
+pdftk "$PSA" cat 23-24 output $OUT/High_Wheeldon.pdf
+pdftk "$PSA" cat 25-26 output $OUT/Shining_Tor.pdf
+pdftk "$PSA" cat 27-28 output $OUT/Wetton_Hill.pdf

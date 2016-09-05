@@ -35,6 +35,7 @@ class SiteXml {
 	private Site decodeSiteEntry(xmlEntry) {
 //		println xmlEntry.'gsx:place'.toString()
 		return new Site(
+			xmlEntry.'gsx:club'.toString(),
 			xmlEntry.'gsx:place'.toString(),
 			location(xmlEntry.'gsx:parking'),
 			location(xmlEntry.'gsx:takeoff'),

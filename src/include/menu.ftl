@@ -26,17 +26,17 @@
                     <li><a href="http://xnet.hsl.gov.uk/siteweather/image00002.jpg">Buxton, Harpur Hill</a></li>
                     <li><a href="http://buxton.viewnetcam.com/CgiStart?page=Single&Language=0">Buxton</a></li>
                     <li><a href="http://www.maccinfo.com/cat/">Cat and Fiddle</a></li>
-                    
-                    
+                    <li><a href="http://www.longmynd.org/#webcams">Long Mynd</a></li>
                 </ul>
               </li>
-              <li><span>Show Landing</span><input id="toggleLanding" type="checkbox" class="Toggle" checked="checked" onClick="javascript: toggleLanding()"/></li>
-              <li><span>Show Parking</span><input id="toggleParking" type="checkbox" class="Toggle" checked="checked" onClick="javascript: toggleParking()"/></li>
+              <li><span>Show Landing</span><input id="toggleLanding" type="checkbox" class="Toggle" onClick="javascript: toggleLanding()"/></li>
+              <li><span>Show Parking</span><input id="toggleParking" type="checkbox" class="Toggle" onClick="javascript: toggleParking()"/></li>
               <li><span>Clubs</span>
                 <ul>
                     <li><a href="http://derbyshiresoaringclub.com/smf/">Derbyshire Soaring Club</a></li>
                     <li><a href="http://www.airways-airsports.com/">Airways</a></li>
-                    <li><a href="http://www.peaksoaring.co.uk//">Peak Soaring Association</a></li>
+                    <li><a href="http://www.peaksoaring.co.uk/">Peak Soaring Association</a></li>
+                    <li><a href="http://www.longmynd.org/">Long Mynd Soaring Club</a></li>
                 </ul>
               </li>
     
