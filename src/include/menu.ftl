@@ -19,10 +19,11 @@
                     <li><a href="http://www.raintoday.co.uk/mobile">Rain Today</a></li>
                     <li><a href="http://rasp.inn.leedsmet.ac.uk/">RASP</a></li>
                     <li><a href="https://www.wendywindblows.com/mobile/">Wendy</a></li>
+                    <li><a href="http://www.metoffice.gov.uk/public/weather/surface-pressure/">Surface Pressure</a></li>
                     <li><a href="http://www.windfinder.com/forecast/the_roaches">Windfinder</a></li>
                     <li><a href="http://earth.nullschool.net/#current/wind/surface/level/orthographic=-4.35,54.90,3000">nullschool</a></li>
                     <span>Webcams</span>
-                    <li><a href="http://lindleyeducationaltrust.org/hollowford/weather/TSimage.jpg">MamCam</a></li>
+                    <li><a href="http://www.lindley.org/weather/TSimage.jpg">MamCam</a></li>
                     <li><a href="http://xnet.hsl.gov.uk/siteweather/image00002.jpg">Buxton, Harpur Hill</a></li>
                     <li><a href="http://buxton.viewnetcam.com/CgiStart?page=Single&Language=0">Buxton</a></li>
                     <li><a href="http://www.maccinfo.com/cat/">Cat and Fiddle</a></li>
