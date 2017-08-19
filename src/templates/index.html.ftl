@@ -9,8 +9,8 @@
     <style type="text/css">
     </style>
     
-    <script src="js/jquery-1.11.3.min.js" type="text/javascript"></script>
-    <script src="js/jquery-ui.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
     <script src="js/jquery.mmenu.min.all.js" type="text/javascript"></script>
     
     <script type="text/javascript">
