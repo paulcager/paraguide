@@ -16,14 +16,14 @@
                 <ul>
                     <span>Forecasts</span>
                     <li><a href="http://www.xcweather.co.uk/forecast/castleton_derbyshire">XCWeather</a></li>
+                    <li><a href="http://rasp-uk.uk/">RASP</a></li>
                     <li><a href="http://www.raintoday.co.uk/mobile">Rain Today</a></li>
-                    <li><a href="http://www.skypix.me.pn/">Skypix</a></li>
                     <li><a href="https://www.wendywindblows.com/mobile/">Wendy</a></li>
                     <li><a href="http://www.metoffice.gov.uk/public/weather/surface-pressure/">Surface Pressure</a></li>
                     <li><a href="http://www.windfinder.com/forecast/the_roaches">Windfinder</a></li>
                     <li><a href="http://earth.nullschool.net/#current/wind/surface/level/orthographic=-4.35,54.90,3000">nullschool</a></li>
                     <span>Webcams</span>
-                    <li><a href="http://rasp-uk.uk/">RASP</a></li>
+                    <li><a href="http://www.skypix.me.pn/mam.htm">Skypix</a></li>
                     <li><a href="http://www.lindley.org/weather/TSimage.jpg">MamCam</a></li>
                     <li><a href="http://xnet.hsl.gov.uk/siteweather/image00002.jpg">Buxton, Harpur Hill</a></li>
                     <li><a href="http://buxton.viewnetcam.com/CgiStart?page=Single&Language=0">Buxton</a></li>
