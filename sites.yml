@@ -1,0 +1,11 @@
+
+clubs:
+  DSC:
+    name: DSC
+    url: https://derbyshiresoaringclub.org.uk/
+
+sites:
+  Bradwell:
+    name: Bradwell
+    clubs: [ DSC ]
+    thing: {lat: 22,   lon: 44}
