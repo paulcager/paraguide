@@ -1,4 +1,4 @@
-package main
+package sites
 
 import (
 	"bytes"
@@ -58,8 +58,8 @@ type Loc struct {
 	Lon float64
 }
 
-// Direction is the range of directions (in degrees).
-type Direction struct {
+// WindRange is the range of directions (in degrees).
+type WindRange struct {
 	Text string
 	From float64
 	To   float64
@@ -71,7 +71,7 @@ type Site struct {
 	Parking []Loc
 	Takeoff []Loc
 	Landing []Loc
-	Wind    []Direction
+	Wind    []WindRange
 }
 
 type LoadError struct {
@@ -210,18 +210,18 @@ func parseLocations(s string) ([]Loc, error) {
 	return locs, lastErr
 }
 
-// parseWind decodes a wind direction (as a string) into a []Direction.
+// parseWind decodes a wind direction (as a string) into a []WindRange.
 // The strings may look like this: "E, SE-SSW", meaning it is flyable
 // when the wind is:
 //	- from the East (interpreted as ENE to ESE)
 //	- between Se and SSW.
-func parseWind(s string) ([]Direction, error) {
+func parseWind(s string) ([]WindRange, error) {
 	if s == "" {
 		return nil, nil
 	}
 
 	parts := commaRegexp.Split(s, -1)
-	dirs := make([]Direction, 0, len(parts))
+	dirs := make([]WindRange, 0, len(parts))
 
 	var lastErr error
 
@@ -250,7 +250,7 @@ func parseWind(s string) ([]Direction, error) {
 				continue
 			}
 		}
-		dirs = append(dirs, Direction{
+		dirs = append(dirs, WindRange{
 			Text: part,
 			From: from,
 			To:   to,
