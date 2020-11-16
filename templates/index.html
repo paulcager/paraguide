@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Para Sites</title>
+
+
+    <style type="text/css">
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery.mmenu/5.3.2/js/jquery.mmenu.min.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#my-menu").mmenu({
+                offCanvas : {
+                    position : "left",
+                    zposition : "front"
+                },
+                navbars: {
+                    content: [ "searchfield" ]
+                },
+                searchfield: {
+                    add: true,
+                    addTo: "panels",
+                    showSubPanels: true
+                }
+            })
+        });
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{api_key}}&libraries=geometry,places&ext=.js"></script>
+    <script src="js/sites.js"></script>
+    <script>
+        google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
+
+    <link href="css/jquery.mmenu.all.css" type="text/css" rel="stylesheet" />
+    <link rel='stylesheet' href='/css/paraguide.css' type='text/css' media='all' />
+</head>
+<body>
+<div id="outermost">
+    <div id="map-canvas"></div>
+    <div id="menucontainer">
+        <nav id="my-menu">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><span>Go to site...</span>
+                    <ul>
+                        {{range .sites -}}
+                            <li><a href="javascript: sites['{{.ID}}'].info()">{{.Name}} ({{.Club.ID}})</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li><span>Guides</span>
+                    <ul>
+                        {{range .sites -}}
+                            <li><a href="{{.SiteGuide}}">{{.Name}} ({{.Club.ID}})</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li><span>Weather / Webcams</span>
+                    <ul>
+                        <span style="margin-top: 0.5em; margin-left: 0.5em; font-weight: bold">Forecasts</span>
+                        {{range $key, $value := .forecasts -}}
+                            <li><a href="{{$value}}">{{ $key }}</a></li>
+                        {{end}}
+                        <span style="margin-top: 0.5em; margin-left: 0.5em; font-weight: bold">Webcams</span>
+                        {{range $key, $value := .webcams -}}
+                            <li><a href="{{$value}}">{{ $key }}</a></li>
+                        {{end}}
+                    </ul>
+                </li>
+                <li><span>Show Landing: <input id="toggleLanding" type="checkbox" class="Toggle" onClick="javascript: toggleLanding()"/></span></li>
+                <li><span>Show Parking: <input id="toggleParking" type="checkbox" class="Toggle" onClick="javascript: toggleParking()"/></span></li>
+                <li><span>Clubs</span>
+                    <ul>
+                        {{range .clubs -}}
+                            <li><a href="{{.URL}}">{{.Name}}</a></li>
+                        {{end}}
+                        <li><a href="http://www.airways-airsports.com/">Airways</a></li>
+                    </ul>
+                </li>
+
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+        <a href="#my-menu"><img src="img/menu.png" alt="Menu"/></a>
+    </div>
+    <div id="url-dialog" title="Bookmark">
+        <p></p>
+    </div>
+</div>
+</body>
+</html>
