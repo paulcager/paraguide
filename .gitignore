@@ -16,3 +16,6 @@ guides/
 /output/
 /tmp/
 /tmp.saved/
+
+secrets/
+.idea/
