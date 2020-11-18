@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	flag "github.com/spf13/pflag"
+	"image/png"
 	"log"
 	"net/http"
 	"os"
@@ -10,10 +12,14 @@ import (
 )
 
 var (
-	model = make(map[string]interface{})
+	model      = make(map[string]interface{})
+	fs         = http.FileServer(http.Dir("static"))
+	listenPort string
 )
 
 func main() {
+	flag.StringVar(&listenPort, "port", ":8080", "Port to listen on")
+
 	clubs, err := loadClubs(sheet)
 	if err != nil {
 		panic(err)
@@ -38,18 +44,13 @@ func main() {
 	}
 	model["webcams"] = webcams
 
-	http.HandleFunc("/site-icons/", func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/site-icons/", func(w http.ResponseWriter, r *http.Request) {
 		iconHandler(sites, w, r)
 	})
 	http.HandleFunc("/", rootHandler)
-	log.Println("Starting HTTP server on 18080")
-	log.Fatal(http.ListenAndServe(":18080", nil))
+	log.Println("Starting HTTP server on " + listenPort)
+	log.Fatal(http.ListenAndServe(listenPort, nil))
 }
-
-var (
-	static = http.Dir("static")
-	fs     = http.FileServer(static)
-)
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if t, ok := templates[r.URL.Path]; ok {
@@ -69,7 +70,7 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/site-icons/"), ".png")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
-		http.Error(w, path + " invalid", http.StatusBadRequest)
+		http.Error(w, path+" invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -81,7 +82,7 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 		size = 64
 	default:
 		if i, e := strconv.ParseUint(parts[0], 10, 32); e != nil {
-			http.Error(w, parts[0] + " invalid", http.StatusBadRequest)
+			http.Error(w, parts[0]+" invalid", http.StatusBadRequest)
 			return
 		} else {
 			size = int(i)
@@ -89,7 +90,10 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 	}
 
 	if s, ok := sites[parts[1]]; ok {
-		windIcon(w, size, s.Wind)
+		img := windIcon(size, s.Wind)
+		if err := png.Encode(w, img); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+		}
 	} else {
 		http.NotFound(w, r)
 	}

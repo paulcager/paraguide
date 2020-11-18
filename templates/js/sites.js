@@ -54,6 +54,7 @@ function show_url(id) {
         "<p>Copy the following link to share.</p>" +
         "<a href='" + url + "'>Direct Link</a>"
     );
+    console.log("show_url(" + id + ")");
     $( '#url-dialog' ).dialog();
 }
 
@@ -65,8 +66,6 @@ function add_info_window(place, guide) {
     var lat = place.lat;
     var lon = place.lon;
     var osGrid = place.osGrid;
-
-    console.log(place)
 
     var f = function() {
         infoWindow.setContent(
