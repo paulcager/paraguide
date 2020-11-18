@@ -30,8 +30,6 @@ func (l Loc) String() string {
 }
 func (l Loc) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
-		"easting":  123, // TODO
-		"northing": 456,
 		"lat":      l.Lat,
 		"lon":      l.Lon,
 	}

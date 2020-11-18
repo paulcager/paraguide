@@ -81,7 +81,6 @@ function add_info_window(place, guide) {
             "<a href='" + maps_url(lat, lon, 15, true) + "'>Satellite View</a><br/>" +
             "<a href='http://www.streetmap.co.uk/ids.srf?mapp=map.srf&searchp=ids&name=" + lat + "," + lon + "&type=LatLong'>OS Map</a><br/>" +
             "<a href='javascript:show_url(\"" + id + "\")'>Bookmark Site</a><br/>" +
-            "<a href='http://www.streetmap.co.uk/grid/" + place.easting + "," + place.northing + "_115'>OS Map</a><br/>" +
             "</p>" +
         "</div>");
         infoWindow.open(map,marker);
