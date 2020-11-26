@@ -1,8 +1,8 @@
 package airspace
 
 import (
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 import "github.com/stretchr/testify/assert"
@@ -73,6 +73,32 @@ airspace:
 func TestDecode(t *testing.T) {
 	a, err := Decode([]byte(data))
 	require.NoError(t, err)
-	pretty.Println(a)
-	assert.Equal(t, "", a)
+	assert.Equal(t, "aberdeen-cta", a.Airspace[0].ID)
+	assert.Equal(t, "D", a.Airspace[0].Class)
+	assert.Equal(t, 3, len(a.Airspace[0].Geometry))
+	assert.Equal(t, "FL115", a.Airspace[0].Geometry[0].Upper)
+	assert.Equal(t, "1500 ft", a.Airspace[0].Geometry[0].Lower)
+	assert.Equal(t, 2, len(a.Airspace[0].Geometry[0].Boundary))
+	assert.Equal(t, Arc{}, a.Airspace[0].Geometry[0].Boundary[0].Arc)
+	assert.Equal(t, Circle{}, a.Airspace[0].Geometry[0].Boundary[0].Circle)
+	assert.Equal(t, []Point([]Point{NewPoint("572153N 0015835W"), NewPoint("572100N 0015802W"), NewPoint("572100N 0023356W")}), a.Airspace[0].Geometry[0].Boundary[0].Line)
+	assert.Equal(t, Arc(Arc{Dir: "cw", Radius: "10 nm", Centre: NewPoint("571834N 0021602W"), To: NewPoint("572153N 0015835W")}), a.Airspace[0].Geometry[0].Boundary[1].Arc)
+}
+
+func TestDownload(t *testing.T) {
+	// Verify real-life data exists and can be parsed correctly.
+	url := `https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`
+	a, err := Load(url)
+	require.NoError(t, err)
+
+	assert.Greater(t, len(a.Airspace), 600)
+}
+
+func TestSVG(t *testing.T) {
+	url := `https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`
+	a, err := Load(url)
+	require.NoError(t, err)
+
+	err = ToSVG(a, os.Stdout)
+	require.NoError(t, err)
 }

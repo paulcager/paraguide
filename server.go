@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/paulcager/paraguide/airspace"
 )
 
 var (
@@ -75,6 +77,8 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	http.Handle("/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
 	http.Handle("/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+
+	http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
 
 	http.Handle("/", makeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -247,5 +251,17 @@ func windHandler(w http.ResponseWriter, r *http.Request) {
 	img := windIndicator(speed, direction)
 	if err := png.Encode(w, img); err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
+	}
+}
+
+
+func airspaceHandler(w http.ResponseWriter, r *http.Request) {
+	a, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", "image/svg+xml")
+	if err:= airspace.ToSVG(a, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

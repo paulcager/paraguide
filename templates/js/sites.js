@@ -1,3 +1,5 @@
+var airspaceOverlay;
+var map;
 var sites = {}
 var weather = {}
 var landColor = "20e000";
@@ -152,7 +154,20 @@ function initialize() {
         sites[window.location.hash.substring(1)].info();
     }
 
-    google.maps.event.addListener(map, 'bounds_changed', fetch_weather);
+    const imageBounds = {
+        north: 59.0,
+        south: 49.5,
+        east:   2.0,
+        west:  -6.5,
+    };
+
+    airspaceOverlay = new google.maps.GroundOverlay(
+        "/airspace/",
+        imageBounds
+    );
+    airspaceOverlay.setMap(map);
+
+    // google.maps.event.addListener(map, 'bounds_changed', fetch_weather);
 
     toggleLanding()
     toggleParking()
