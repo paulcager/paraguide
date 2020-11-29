@@ -10,7 +10,6 @@ import (
 
 // Download airspace defs in yaml from https://gitlab.com/ahsparrow/airspace
 // Schema is https://gitlab.com/ahsparrow/yaixm/-/blob/master/yaixm/data/schema.yaml
-// yaml decoder is https://github.com/go-yaml/yaml
 
 type Airspace struct {
 	Airspace []Feature
@@ -51,7 +50,7 @@ type Circle struct {
 type Point struct {
 	valid bool
 	Text  string
-	x,y  float64
+	x, y  float64
 }
 
 func NewPoint(str string) Point {
@@ -146,12 +145,27 @@ type Arc struct {
 	To     Point
 }
 
-
-
 func Decode(data []byte) (Airspace, error) {
 	var a Airspace
 	err := yaml.Unmarshal(data, &a)
+	normalise(&a)
 	return a, err
+}
+
+func normalise(a *Airspace) {
+	for i := range a.Airspace {
+		for j := range a.Airspace[i].Geometry {
+			if a.Airspace[i].Geometry[j].Name == "" {
+				a.Airspace[i].Geometry[j].Name = a.Airspace[i].Name
+			}
+			if a.Airspace[i].Geometry[j].Class == "" {
+				a.Airspace[i].Geometry[j].Class = a.Airspace[i].Class
+			}
+			if a.Airspace[i].Geometry[j].ID == "" {
+				a.Airspace[i].Geometry[j].ID = a.Airspace[i].ID
+			}
+		}
+	}
 }
 
 func Load(url string) (Airspace, error) {
