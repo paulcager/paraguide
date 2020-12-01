@@ -161,11 +161,7 @@ function initialize() {
         west:  -6.5,
     };
 
-    airspaceOverlay = new google.maps.GroundOverlay(
-        "/airspace/",
-        imageBounds
-    );
-    airspaceOverlay.setMap(map);
+    createAirspace();
 
     // google.maps.event.addListener(map, 'bounds_changed', fetch_weather);
 

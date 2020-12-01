@@ -48,7 +48,7 @@ func init() {
 				return nil
 			}
 
-			name := strings.TrimPrefix(path, "templates")
+			name := strings.TrimSuffix(strings.TrimPrefix(path, "templates"), ".tmpl")
 			b, err := ioutil.ReadFile(path)
 			if err != nil {
 				panic(err)

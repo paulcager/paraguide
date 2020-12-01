@@ -59,6 +59,12 @@ func main() {
 	}
 	model["webcams"] = webcams
 
+	air, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	if err != nil {
+		panic(err)
+	}
+	model["airspace"] = air
+
 	//queryMetSites()
 	if !noWeather {
 		startMetofficeRefresh(metRefresh)
@@ -78,7 +84,12 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 
 	http.Handle("/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
 
-	http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
+	//http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
+	features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	http.HandleFunc("/airspace/debug/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "text/plain")
+		json.NewEncoder(w).Encode(features)
+	})
 
 	http.Handle("/", makeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -254,14 +265,13 @@ func windHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func airspaceHandler(w http.ResponseWriter, r *http.Request) {
 	a, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.Header().Add("Content-Type", "image/svg+xml")
-	if err:= airspace.ToSVG(a, w); err != nil {
+	if err := airspace.ToSVG(a, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
