@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -15,16 +16,30 @@ import (
 // Download airspace defs in yaml from https://gitlab.com/ahsparrow/airspace
 // Schema is https://gitlab.com/ahsparrow/yaixm/-/blob/master/yaixm/data/schema.yaml
 
-var clearanceRequired = map[string]bool{
-	"A": true,  // Most airways; London/Manchester TMAs.
-	"C": true,  // Mostly above FL195 and some airways.
-	"D": true,  // Most aerodrome CTRs and CTAs. Some TMAs and lower levels of selected airways.
-	"E": false, // Scottish airways. ATC clearance not required for VFR flight, pilots encouraged to contact ATC.
-	"G": false, // ‘Open FIR’, ATC clearance not required, radio not required.
-}
+var (
+	prohibitedAirspaceClasses = map[string]bool{
+		"A": true,  // Most airways; London/Manchester TMAs.
+		"C": true,  // Mostly above FL195 and some airways.
+		"D": true,  // Most aerodrome CTRs and CTAs. Some TMAs and lower levels of selected airways.
+		"E": false, // Scottish airways. ATC clearance not required for VFR flight, pilots encouraged to contact ATC.
+		"G": false, // ‘Open FIR’, ATC clearance not required, radio not required.
+	}
+
+	// Not all are strictly prohibited, some are "avoid unless ...."
+	prohibitedTypes = map[string]bool{
+		"MATZ": true, // Military ATZ
+		"ATZ":  true, // Air Traffic Zone
+		"RAT":  true, // Temporary restricted area
+		"RMZ":  true, // Radio mandatory zone
+		"TMZ":  true, // Transponder mandatory zone
+		"P":    true, // Prohibited area
+		"R":    true, // Restricted area
+		"TMA":  true, // Terminal control area
+	}
+)
 
 func ClearanceRequired(f Feature) bool {
-	return clearanceRequired[f.Class] || f.Type == "MATZ" || f.Type == "ATZ"
+	return prohibitedAirspaceClasses[f.Class] || prohibitedTypes[f.Type]
 }
 
 //func init() {
@@ -49,6 +64,7 @@ type airspaceResponse struct {
 			ID       string
 			Name     string
 			Class    string
+			Seqno    int
 			Boundary []struct {
 				// One of:
 				Circle struct {
@@ -84,14 +100,17 @@ type Volume struct {
 	ID                string
 	Name              string
 	Class             string
+	Sequence          int
 	Lower             float64
 	Upper             float64
 	ClearanceRequired bool
 	// The (horizontal) shape will be either a circle or a polygon.
 	// One of:
 	Circle  Circle
-	Polygon geo.Polygon
+	Polygon Polygon // Don't use geo.Polygon here, as that doesn't do JSON serialisation properly.
 }
+
+type Polygon []*geo.Point
 
 type Circle struct {
 	Radius float64
@@ -137,18 +156,20 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 			}
 
 			vol := Volume{
-				ID:    id,
-				Name:  name,
-				Class: class,
-				Lower: decodeHeight(g.Lower),
-				Upper: decodeHeight(g.Upper),
+				ID:                id,
+				Name:              name,
+				Class:             class,
+				Sequence:          g.Seqno,
+				Lower:             decodeHeight(g.Lower),
+				Upper:             decodeHeight(g.Upper),
 				ClearanceRequired: ClearanceRequired(feat),
 			}
 
+			var currentPos *geo.Point
 			for _, b := range g.Boundary {
 				if b.Circle.Radius != "" {
 					var err error
-					vol.Circle.Radius = decodeDistance(b.Circle.Radius) * 1852 // Convert naut miles to meters.
+					vol.Circle.Radius = decodeDistance(b.Circle.Radius)
 					vol.Circle.Centre, err = parseLatLng(b.Circle.Centre)
 					if err != nil {
 						return nil, fmt.Errorf("bad circle %v: %s", b, err)
@@ -159,15 +180,27 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 					if err != nil {
 						return nil, fmt.Errorf("bad line %v: %s", b, err)
 					}
-					vol.Polygon.Add(p)
+					vol.Polygon = append(vol.Polygon, p)
+					currentPos = p
 				}
 				if b.Arc.Radius != "" {
-					// TODO - make it an arc!
-					p, err := parseLatLng(b.Arc.To)
+					to, err := parseLatLng(b.Arc.To)
 					if err != nil {
 						return nil, fmt.Errorf("bad arc %v: %s", b, err)
 					}
-					vol.Polygon.Add(p)
+					radius := decodeDistance(b.Arc.Radius)
+					centre, _ := parseLatLng(b.Arc.Centre)
+					dir := +1.0
+					_ ,_= dir, currentPos
+					if b.Arc.Dir == "ccw" {
+						dir = -1.0
+					}
+
+					arc := arcToPolygon(centre, radius, currentPos, to, dir)
+					for _, p := range arc {
+						vol.Polygon = append(vol.Polygon, p)
+						currentPos = p
+					}
 				}
 			}
 
@@ -178,6 +211,32 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 	}
 
 	return features, nil
+}
+
+func arcToPolygon(centre *geo.Point, radius float64, initialPoint *geo.Point, to *geo.Point, dir float64) []*geo.Point {
+	var (
+		initialAngleDeg = centre.BearingTo(initialPoint)
+		finalAngleDeg   = centre.BearingTo(to)
+	)
+	if dir > 0 {
+		// Clockwise
+		if finalAngleDeg < initialAngleDeg {
+			finalAngleDeg += 360
+		}
+	} else {
+		if finalAngleDeg > initialAngleDeg {
+			initialAngleDeg += 360
+		}
+	}
+
+	var poly []*geo.Point
+	for a := initialAngleDeg; dir*a < dir*finalAngleDeg; a += dir * 10 {
+		point := centre.PointAtDistanceAndBearing(radius/1000, a)
+		poly = append(poly, point)
+	}
+	poly = append(poly, to)
+
+	return poly
 }
 
 func parseLatLng(str string) (*geo.Point, error) {
@@ -246,7 +305,24 @@ func decodeDistance(d string) float64 {
 	if err != nil {
 		log.Printf("Invalid distance %#q: %s\n", d, err)
 	}
-	return f
+	return nautMilesToMeters(f)
+}
+
+func nautMilesToMeters(nm float64) float64 {
+	return nm * 1852
+}
+
+func metersToDegreesOfLat(m float64) float64 {
+	return m / 1852 / degToNautMileY
+}
+func degreesOfLatToMeters(d float64) float64 {
+	return d * 1852 * degToNautMileY
+}
+func degreesOfLngToMeters(d float64) float64 {
+	return d * 1852 * degToNautMileX
+}
+func metersToDegreesOfLng(m float64) float64 {
+	return m / 1852 / degToNautMileX
 }
 
 func Load(url string) ([]Feature, error) {
@@ -256,6 +332,19 @@ func Load(url string) ([]Feature, error) {
 	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return Decode(b)
+}
+
+func LoadFile(fileName string) ([]Feature, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	b, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

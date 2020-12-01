@@ -19,7 +19,7 @@ var parkingImage = new google.maps.MarkerImage(
 
 function weatherImage(windSpeed, windDirection) {
     return new google.maps.MarkerImage(
-        "/wind-indicator/" + windSpeed + "/" + windDirection,
+        "/{{.apiVersion}}/wind-indicator/" + windSpeed + "/" + windDirection,
         new google.maps.Size(80, 80),
         null,
         new google.maps.Point(40, 40));
@@ -121,7 +121,7 @@ function create_markers(id, name, guide, places, icon) {
 }
 
 function icon_url(type, place) {
-    return "site-icons/" + type + "/" + safe_name(place) + ".png";
+    return "/{{.apiVersion}}/site-icons/" + type + "/" + safe_name(place) + ".png";
 }
 
 function safe_name(place) {
@@ -218,7 +218,7 @@ function fetch_weather() {
     }
 
     $.ajax({
-        url: "/weather/",
+        url: "/{{.apiVersion}}/weather/",
         dataType: 'JSON',
         success: function(w){
             console.log("Got weather", w)

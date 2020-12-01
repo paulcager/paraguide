@@ -95,7 +95,7 @@ func height(h string) float64 {
 }
 
 func chooseColour(featureType string, class string, h float64) (string, float64) {
-	if !clearanceRequired[class] {
+	if !prohibitedAirspaceClasses[class] {
 		return "black", 0.05
 	}
 
