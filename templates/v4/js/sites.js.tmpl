@@ -1,4 +1,4 @@
-var airspaceOverlay;
+var airspace;
 var map;
 var sites = {}
 var weather = {}
@@ -161,12 +161,12 @@ function initialize() {
         west:  -6.5,
     };
 
-    createAirspace();
+    airspace = createAirspace();
 
-    // google.maps.event.addListener(map, 'bounds_changed', fetch_weather);
-
-    toggleLanding()
-    toggleParking()
+    toggleWeather();
+    toggleLanding();
+    toggleParking();
+    toggleAirspace();
 }
 
 function toggleLanding() {
@@ -193,6 +193,15 @@ function toggleParking() {
     }
 }
 
+function toggleAirspace() {
+    var vis = $('#toggleAirspace').prop('checked');
+    var mapParam = vis ? map : null;
+    var i;
+    for (i in airspace) {
+        airspace[i].setMap(mapParam);
+    }
+}
+
 function metTitle(obs) {
     var title = obs.Name + "(" + obs.WindSpeed + "mph";
     if (obs.WindDirection != "") {
@@ -205,9 +214,9 @@ function metTitle(obs) {
     return title
 }
 
-function fetch_weather() {
+function toggleWeather() {
     var vis = $('#toggleWeather').prop('checked');
-    console.log("fetch_weather: vis=" + vis);
+    console.log("toggleWeather: vis=" + vis);
 
     if (!vis) {
         for (const ID in weather) {
