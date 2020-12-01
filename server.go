@@ -17,6 +17,10 @@ import (
 	"github.com/paulcager/paraguide/airspace"
 )
 
+const (
+	apiVersion = "v4"
+)
+
 var (
 	model       = make(map[string]interface{})
 	fs          = http.FileServer(http.Dir("static"))
@@ -34,6 +38,8 @@ func main() {
 	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
 	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
 	flag.Parse()
+
+	model["apiVersion"] = apiVersion
 
 	clubs, err := loadClubs(sheet)
 	if err != nil {
@@ -59,6 +65,13 @@ func main() {
 	}
 	model["webcams"] = webcams
 
+	air, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	//air, err := airspace.LoadFile(`donc.yml`)
+	if err != nil {
+		panic(err)
+	}
+	model["airspace"] = air
+
 	//queryMetSites()
 	if !noWeather {
 		startMetofficeRefresh(metRefresh)
@@ -69,16 +82,22 @@ func main() {
 }
 
 func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
-	http.Handle("/site-icons/", makeCachingHandler(imageCache, http.HandlerFunc(
+	http.Handle("/" + apiVersion + "/site-icons/", makeCachingHandler(imageCache, http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			iconHandler(sites, w, r)
 		})))
 
-	http.Handle("/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
+	http.Handle("/" + apiVersion + "/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
-	http.Handle("/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+	http.Handle("/" + apiVersion + "/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
 
-	http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
+	//http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
+	//features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	http.HandleFunc("/airspace/debug/", func(w http.ResponseWriter, r *http.Request) {
+		features, _ := airspace.LoadFile("donc.yml")
+		w.Header().Add("Content-Type", "text/plain")
+		json.NewEncoder(w).Encode(features)
+	})
 
 	http.Handle("/", makeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -187,7 +206,7 @@ func floatParam(r *http.Request, name string) (float64, error) {
 }
 
 func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/site-icons/"), ".png")
+	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/" + apiVersion + "/site-icons/"), ".png")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
 		http.NotFound(w, r)
@@ -229,7 +248,7 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 }
 
 func windHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/wind-indicator/"), ".png")
+	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/" + apiVersion + "/wind-indicator/"), ".png")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
 		http.NotFound(w, r)
@@ -254,14 +273,13 @@ func windHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func airspaceHandler(w http.ResponseWriter, r *http.Request) {
 	a, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.Header().Add("Content-Type", "image/svg+xml")
-	if err:= airspace.ToSVG(a, w); err != nil {
+	if err := airspace.ToSVG(a, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
