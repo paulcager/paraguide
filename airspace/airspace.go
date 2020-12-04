@@ -191,16 +191,12 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 					radius := decodeDistance(b.Arc.Radius)
 					centre, _ := parseLatLng(b.Arc.Centre)
 					dir := +1.0
-					_ ,_= dir, currentPos
 					if b.Arc.Dir == "ccw" {
 						dir = -1.0
 					}
 
 					arc := arcToPolygon(centre, radius, currentPos, to, dir)
-					for _, p := range arc {
-						vol.Polygon = append(vol.Polygon, p)
-						currentPos = p
-					}
+					vol.Polygon = append(vol.Polygon, arc...)
 				}
 			}
 
@@ -214,10 +210,9 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 }
 
 func arcToPolygon(centre *geo.Point, radius float64, initialPoint *geo.Point, to *geo.Point, dir float64) []*geo.Point {
-	var (
-		initialAngleDeg = centre.BearingTo(initialPoint)
-		finalAngleDeg   = centre.BearingTo(to)
-	)
+	initialAngleDeg := centre.BearingTo(initialPoint)
+	finalAngleDeg := centre.BearingTo(to)
+
 	if dir > 0 {
 		// Clockwise
 		if finalAngleDeg < initialAngleDeg {

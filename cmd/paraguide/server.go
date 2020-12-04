@@ -22,13 +22,14 @@ const (
 )
 
 var (
-	model       = make(map[string]interface{})
-	fs          = http.FileServer(http.Dir("static"))
-	imageCache  time.Duration
-	staticCache time.Duration
-	metRefresh  time.Duration
-	noWeather   bool
-	listenPort  string
+	model           = make(map[string]interface{})
+	fs              = http.FileServer(http.Dir("static"))
+	imageCache      time.Duration
+	staticCache     time.Duration
+	metRefresh      time.Duration
+	noWeather       bool
+	listenPort      string
+	includeKMLSites bool
 )
 
 func main() {
@@ -37,17 +38,18 @@ func main() {
 	flag.DurationVar(&staticCache, "static-cache-max-age", 1*time.Hour, "If not zero, the max-age property to set in Cache-Control for static/template files")
 	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
 	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
+	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
 	flag.Parse()
 
 	model["apiVersion"] = apiVersion
 
-	clubs, err := loadClubs(sheet)
+	clubs, err := loadClubs()
 	if err != nil {
 		panic(err)
 	}
 	model["clubs"] = clubs
 
-	sites, err := loadSites(sheet, clubs)
+	sites, err := loadSites(clubs)
 	if err != nil {
 		panic(err)
 	}
@@ -82,14 +84,14 @@ func main() {
 }
 
 func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
-	http.Handle("/" + apiVersion + "/site-icons/", makeCachingHandler(imageCache, http.HandlerFunc(
+	http.Handle("/"+apiVersion+"/site-icons/", makeCachingHandler(imageCache, http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			iconHandler(sites, w, r)
 		})))
 
-	http.Handle("/" + apiVersion + "/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
+	http.Handle("/"+apiVersion+"/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
-	http.Handle("/" + apiVersion + "/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+	http.Handle("/"+apiVersion+"/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
 
 	//http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
 	//features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
@@ -146,6 +148,12 @@ func makeCachingHandler(age time.Duration, h http.Handler) http.Handler {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if t, ok := templates[r.URL.Path]; ok {
+		switch {
+		case strings.HasSuffix(r.URL.Path, ".js"):
+			w.Header().Add("Content-Type", "text/javascript")
+		case strings.HasSuffix(r.URL.Path, ".html") || r.URL.Path == "/":
+			w.Header().Add("Content-Type", "text/html")
+		}
 		err := t.Execute(w, model)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %s\n", r.URL, err)
@@ -206,7 +214,7 @@ func floatParam(r *http.Request, name string) (float64, error) {
 }
 
 func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/" + apiVersion + "/site-icons/"), ".png")
+	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"+apiVersion+"/site-icons/"), ".png")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
 		http.NotFound(w, r)
@@ -235,6 +243,7 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 
 	s, ok := sites[parts[1]]
 	if !ok {
+		fmt.Fprintf(os.Stderr, "No site %#q\n", parts[1])
 		http.NotFound(w, r)
 		return
 	}
@@ -248,7 +257,7 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 }
 
 func windHandler(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/" + apiVersion + "/wind-indicator/"), ".png")
+	path := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"+apiVersion+"/wind-indicator/"), ".png")
 	parts := strings.Split(path, "/")
 	if len(parts) != 2 {
 		http.NotFound(w, r)

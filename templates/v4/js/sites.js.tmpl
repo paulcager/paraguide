@@ -1,6 +1,11 @@
+var sites = {
+    {{range .sites}}
+    {{json .ID}}: {{json .}},
+    {{- end}}
+};
+
 var airspace;
 var map;
-var sites = {}
 var weather = {}
 var landColor = "20e000";
 var pinImage = new google.maps.MarkerImage(
@@ -28,36 +33,17 @@ function weatherImage(windSpeed, windDirection) {
 
 var infoWindow = new google.maps.InfoWindow({});
 
-function create_sites() {
-    var sites = {};
-    {{range .sites}}
-    sites["{{id .Name}}"] = create_site(
-        "{{id .Name}}",
-        "{{.Name}}",
-        "{{.SiteGuide}}",
-        {{json .Parking}},
-    {{json .Takeoff}},
-    {{json .Landing}}
-    );
-    {{end}}
-
-    return sites;
+function enrich_sites() {
+    for (var id of Object.keys(sites)) {
+        enrich_site(sites[id]);
+    }
 }
 
-function create_site(id, name, guide, parkings, takeoffs, landings) {
-    var icon = icon_url("small", name);
-    site = {
-        id: id,
-        name: name,
-        parkings: create_markers(id, name, guide, parkings, parkingImage),
-        takeoffs: create_markers(id, name, guide, takeoffs, {url: icon, anchor: new google.maps.Point(12, 12)}),
-        landings: create_markers(id, name, guide, landings, pinImage),
-        guide: guide,
-    }
-
-    site.info = site.takeoffs[0].info;
-
-    return site;
+function enrich_site(s) {
+    var icon = icon_url("small", s.ID);
+    s.parkings = create_markers(s, s.Parking, parkingImage);
+    s.takeoffs = create_markers(s, s.Takeoff, {url: icon, anchor: new google.maps.Point(12, 12)});
+    s.landings = create_markers(s, s.Landing, pinImage);
 }
 
 function show_url(id) {
@@ -70,24 +56,22 @@ function show_url(id) {
     $('#url-dialog').dialog();
 }
 
-function add_info_window(place, guide) {
-    var name = place.name;
-    var id = place.id;
-    var marker = place.marker;
-    var icon = icon_url("large", name);
-    var lat = place.lat;
-    var lon = place.lon;
-    var osGrid = place.osGrid;
+function add_info_window(site, marker, lat, lon) {
+    var name = site.Name;
+    var id = site.ID;
+    var icon = icon_url("large", id);
+    var wind = site.Wind.map(function(x) {return x.Text})
 
     var f = function () {
         infoWindow.setContent(
             "<div>" +
             "<h1>" + name + "</h1>" +
             "<div style='padding: 0.5em;'>" +
-            "<img src='" + icon + "'/>" +
+            "<img src='" + icon + "' title='" + wind + "'/>" +
             "</div>" +
+            "<p style='font-size: 120%; font-weight: bold;'>Wind: " + wind + "</p>" +
             "<p>" +
-            "<a href='" + guide + "' target='guide'>Guide</a><br/>" +
+            "<a href='" + site.SiteGuide + "' target='guide'>Guide</a><br/>" +
             "<a href='" + maps_url(lat, lon, 9, false) + "'>Directions</a><br/>" +
             "<a href='" + maps_url(lat, lon, 15, true) + "'>Satellite View</a><br/>" +
             "<a href='http://www.streetmap.co.uk/ids.srf?mapp=map.srf&searchp=ids&name=" + lat + "," + lon + "&type=LatLong'>OS Map</a><br/>" +
@@ -97,35 +81,28 @@ function add_info_window(place, guide) {
         infoWindow.open(map, marker);
     };
     google.maps.event.addListener(marker, 'click', f);
-    place.info = f;
+    site.info = f;
 }
 
-
-function create_markers(id, name, guide, places, icon) {
+function create_markers(s, places, icon) {
     var i;
     for (i = 0; i < places.length; i++) {
         var t = places[i];
-        t.id = id;
-        t.name = name;
         var marker = new google.maps.Marker({
             position: new google.maps.LatLng(t.lat, t.lon),
             map: map,
-            title: name,
+            title: s.Name,
             icon: icon,
             draggable: false,
         });
         t.marker = marker;
-        add_info_window(t, guide);
+        add_info_window(s, marker, t.lat, t.lon);
     }
     return places;
 }
 
-function icon_url(type, place) {
-    return "/{{.apiVersion}}/site-icons/" + type + "/" + safe_name(place) + ".png";
-}
-
-function safe_name(place) {
-    return place.replace(/'/g, "_").replace(/ /g, "_");
+function icon_url(type, id) {
+    return "/{{.apiVersion}}/site-icons/" + type + "/" + id + ".png";
 }
 
 function maps_url(lat, lng, zoom, satellite) {
@@ -148,7 +125,7 @@ function initialize() {
         },
     }
     map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
-    sites = create_sites();
+    enrich_sites();
 
     if (sites[window.location.hash.substring(1)]) {
         sites[window.location.hash.substring(1)].info();

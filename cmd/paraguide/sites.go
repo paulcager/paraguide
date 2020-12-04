@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"github.com/paulcager/paraguide/scraping"
 	"net/url"
 	"os"
 	"regexp"
@@ -55,13 +57,11 @@ type Site struct {
 	SiteGuide string
 }
 
-var sheetsAPIKey = "AIzaSyCtdAkZbd3K1nBsDUf-Isj2t49lVD4xvVY"
-
 func loadLookup(sheet string, ranges string) (map[string]string, error) {
 	ctx := context.Background()
 	sheetsService, err := sheets.NewService(ctx,
 		option.WithScopes(sheets.SpreadsheetsReadonlyScope),
-		option.WithAPIKey(sheetsAPIKey),
+		option.WithAPIKey(apiKey),
 	)
 	if err != nil {
 		return nil, err
@@ -82,24 +82,77 @@ func loadLookup(sheet string, ranges string) (map[string]string, error) {
 	return m, nil
 }
 
-func loadSites(sheet string, clubs map[string]Club) (map[string]Site, error) {
+func loadSites(clubs map[string]Club) (map[string]Site, error) {
+	sites := make(map[string]Site)
+	err := loadSitesFromSheet(sites, sheet, clubs)
+	n := len(sites)
+
+	if err == nil && includeKMLSites {
+		err = loadSitesFromKml(sites, "NorthernSites.kml", clubs)
+	}
+
+	//if pennineSites, err := scraping.Pennine(); err == nil {
+	//	addScraped(sites, pennineSites)
+	//} else {
+	//	// Log error but carry on
+	//	fmt.Fprintf(os.Stderr, "Could not add Pennine sites: %s\n", err)
+	//}
+	//
+	//if dalesSites, err := scraping.Dales(); err == nil {
+	//	addScraped(sites, dalesSites)
+	//} else {
+	//	// Log error but carry on
+	//	fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
+	//}
+
+	if northWalesSites, err := scraping.NorthWales(); err == nil {
+		addScraped(sites, northWalesSites)
+	} else {
+		// Log error but carry on
+		fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
+	}
+
+
+	fmt.Fprintf(os.Stderr, "Read %d + %d = %d sites\n", n, len(sites)-n, len(sites))
+	return sites, err
+}
+
+func addScraped(sites map[string]Site, scraped []scraping.Site) {
+	for _, s := range scraped {
+		wind, err := parseWind(s.Wind)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not set wind %q for %q: %s\n", s.Wind, s.Name, err)
+			wind = []WindRange{{Text: s.Wind}}
+		}
+		newSite := Site{
+			ID:        s.Club + "-" + s.SiteID,
+			Name:      s.Name,
+			Club:      Club{ID: s.Club},
+			Takeoff:   []Loc{s.Loc},
+			Parking:   []Loc{},
+			Landing:   []Loc{},
+			Wind:      wind,
+			SiteGuide: s.SiteURL,
+		}
+		sites[newSite.ID] = newSite
+	}
+}
+
+func loadSitesFromSheet(sites map[string]Site, sheet string, clubs map[string]Club) error {
 	ctx := context.Background()
 	sheetsService, err := sheets.NewService(ctx,
 		option.WithScopes(sheets.SpreadsheetsReadonlyScope),
-		option.WithAPIKey(sheetsAPIKey),
+		option.WithAPIKey(apiKey),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	resp, err := sheetsService.Spreadsheets.Values.Get(sheet, "Sites!A2:G").Do()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var (
-		sites   = make(map[string]Site)
-		lastErr error
-	)
+	var lastErr error
 
 	for _, row := range resp.Values {
 		parking, err1 := parseLocations(row[2].(string))
@@ -145,14 +198,77 @@ func loadSites(sheet string, clubs map[string]Club) (map[string]Site, error) {
 		sites[id] = site
 	}
 
-	return sites, lastErr
+	return lastErr
 }
 
-func loadClubs(sheet string) (map[string]Club, error) {
+func loadSitesFromKml(sites map[string]Site, fileName string, clubs map[string]Club) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var kml KML
+	err = xml.NewDecoder(file).Decode(&kml)
+	if err != nil {
+		return err
+	}
+
+	for _, club := range kml.Document.Folder.Folder {
+		for _, place := range club.Placemark {
+			var wind []WindRange
+			if start := strings.LastIndexByte(place.Description, '('); start != -1 {
+				windStr := place.Description[start+1:]
+				if end := strings.IndexByte(windStr, ')'); end != -1 {
+					wind, err = parseWind(windStr[:end])
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Bad wind directions for %+v\n", place)
+						continue
+					}
+				}
+			}
+
+			if wind == nil {
+				fmt.Fprintf(os.Stderr, "Wind direction unknown for %+v\n", place)
+			}
+
+			parts := strings.Split(place.Point.Coordinates, ",")
+			if len(parts) != 3 {
+				fmt.Fprintf(os.Stderr, "Expected 3 coordinates for %+v\n", place)
+				continue
+			}
+			lng, err1 := strconv.ParseFloat(parts[0], 64)
+			lat, err2 := strconv.ParseFloat(parts[1], 64)
+			if err1 != nil || err2 != nil {
+				fmt.Fprintf(os.Stderr, "Invalid coordinates for %+v\n", place)
+				continue
+			}
+
+			site := Site{
+				ID:   "k-" + idOf(place.Name),
+				Name: place.Name,
+				Club: Club{
+					ID:   "k-" + club.Name,
+					Name: club.Name,
+				},
+				Parking: []Loc{},
+				Takeoff: []Loc{{Lat: lat, Lon: lng}},
+				Landing: []Loc{},
+				Wind:    wind,
+			}
+
+			sites[site.ID] = site
+		}
+	}
+
+	return nil
+}
+
+func loadClubs() (map[string]Club, error) {
 	ctx := context.Background()
 	sheetsService, err := sheets.NewService(ctx,
 		option.WithScopes(sheets.SpreadsheetsReadonlyScope),
-		option.WithAPIKey(sheetsAPIKey),
+		option.WithAPIKey(apiKey),
 	)
 	if err != nil {
 		return nil, err
@@ -192,6 +308,7 @@ func anyError(errors ...error) error {
 var (
 	spaceRegexp = regexp.MustCompile(`\s+`)
 	commaRegexp = regexp.MustCompile(`,\s*`)
+	andRegexp = regexp.MustCompile(` and `)
 )
 
 func parseLocations(s string) ([]Loc, error) {
@@ -229,18 +346,41 @@ func parseLocations(s string) ([]Loc, error) {
 // when the wind is:
 //	- from the East (interpreted as ENE to ESE)
 //	- between SE and SSW.
+// Other formats are also seen on club's websites, such as "NNE - NE (020-040)" (Dales)
+// or "W to NW" (Pennine).
 func parseWind(s string) ([]WindRange, error) {
 	if s == "" {
 		return nil, nil
 	}
 
 	parts := commaRegexp.Split(s, -1)
+	if len(parts) == 1 {
+		parts = andRegexp.Split(s, -1)
+	}
 	dirs := make([]WindRange, 0, len(parts))
 
 	var lastErr error
 
+	if strings.HasPrefix(s, "all") {
+		return []WindRange{{Text: s, From: 0, To: 360}}, nil
+	}
+
 	for _, part := range parts {
+		if ind := strings.IndexByte(part, '('); ind != -1 {
+			// Strip out "(020 - 040)", although maybe it would be better to actually use those values.
+			part = part[0:ind]
+		}
 		fromTo := strings.Split(part, "-")
+		if len(fromTo) == 1 {
+			// For the benefir of Cow Close Fell, which uses a unicode dash
+			fromTo = strings.Split(part, " \xe2\x80\x93 ")
+		}
+		if len(fromTo) == 1 {
+			fromTo = strings.Split(part, " to ")
+		}
+		for i := range fromTo {
+			fromTo[i] = strings.TrimSpace(fromTo[i])
+		}
 
 		var from, to float64
 		from, err := parseDirection(fromTo[0])
@@ -248,7 +388,10 @@ func parseWind(s string) ([]WindRange, error) {
 			lastErr = err
 			continue
 		}
-		if len(fromTo) == 1 {
+
+		if len(fromTo) == 1 && fromTo[0] == "no wind" {
+			continue
+		} else if len(fromTo) == 1 {
 			from = from - 22.5
 			if from < 0 {
 				from = from + 22.5
@@ -264,6 +407,18 @@ func parseWind(s string) ([]WindRange, error) {
 				continue
 			}
 		}
+
+		// Some sites are specified as e.g. "SW-SE" rather than "SE-SW". Use a heuristic that sites tend not to
+		// have continuous range > 180 degrees.
+		rang := to - from
+		if to < from {
+			rang = 360 - from + to
+		}
+		if rang > 180 {
+			fmt.Println("Swapping", part)
+			from, to = to, from
+		}
+
 		dirs = append(dirs, WindRange{
 			Text: part,
 			From: from,
