@@ -91,19 +91,19 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 		err = loadSitesFromKml(sites, "NorthernSites.kml", clubs)
 	}
 
-	//if pennineSites, err := scraping.Pennine(); err == nil {
-	//	addScraped(sites, pennineSites)
-	//} else {
-	//	// Log error but carry on
-	//	fmt.Fprintf(os.Stderr, "Could not add Pennine sites: %s\n", err)
-	//}
-	//
-	//if dalesSites, err := scraping.Dales(); err == nil {
-	//	addScraped(sites, dalesSites)
-	//} else {
-	//	// Log error but carry on
-	//	fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
-	//}
+	if pennineSites, err := scraping.Pennine(); err == nil {
+		addScraped(sites, pennineSites)
+	} else {
+		// Log error but carry on
+		fmt.Fprintf(os.Stderr, "Could not add Pennine sites: %s\n", err)
+	}
+
+	if dalesSites, err := scraping.Dales(); err == nil {
+		addScraped(sites, dalesSites)
+	} else {
+		// Log error but carry on
+		fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
+	}
 
 	if northWalesSites, err := scraping.NorthWales(); err == nil {
 		addScraped(sites, northWalesSites)
@@ -112,6 +112,26 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 		fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
 	}
 
+	if lakeDistrict, err := scraping.LakeDistrict(); err == nil {
+		addScraped(sites, lakeDistrict)
+	} else {
+		// Log error but carry on
+		fmt.Fprintf(os.Stderr, "Could not add Lake District sites: %s\n", err)
+	}
+
+	if midWales, err := scraping.MidWales(); err == nil {
+		addScraped(sites, midWales)
+	} else {
+		// Log error but carry on
+		fmt.Fprintf(os.Stderr, "Could not add Mid Wales sites: %s\n", err)
+	}
+
+	//if welshBorders, err := scraping.WelshBorders(); err == nil {
+	//	addScraped(sites, welshBorders)
+	//} else {
+	//	// Log error but carry on
+	//	fmt.Fprintf(os.Stderr, "Could not add Welsh Borders sites: %s\n", err)
+	//}
 
 	fmt.Fprintf(os.Stderr, "Read %d + %d = %d sites\n", n, len(sites)-n, len(sites))
 	return sites, err
@@ -353,7 +373,7 @@ func parseWind(s string) ([]WindRange, error) {
 		return nil, nil
 	}
 
-	parts := commaRegexp.Split(s, -1)
+	parts := commaRegexp.Split(strings.ReplaceAll(s, "/", ","), -1)
 	if len(parts) == 1 {
 		parts = andRegexp.Split(s, -1)
 	}
@@ -366,6 +386,7 @@ func parseWind(s string) ([]WindRange, error) {
 	}
 
 	for _, part := range parts {
+		part = strings.TrimSuffix(part, "+ No Wind")
 		if ind := strings.IndexByte(part, '('); ind != -1 {
 			// Strip out "(020 - 040)", although maybe it would be better to actually use those values.
 			part = part[0:ind]
