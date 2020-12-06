@@ -385,6 +385,73 @@ func MidWalesSite(site *Site) error {
 	return nil
 }
 
+func Snowdonia() ([]Site, error) {
+	r, err := openPage("https://www.snowdoniaskysports.co.uk/node/3")
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var sites []Site
+	doc.Find("div.view-sites-guide div.view-content table tr").Each(func(i int, s *goquery.Selection) {
+		a := s.Find("td:nth-child(1) > a")
+		href := a.AttrOr("href", "")
+		if href == "" {
+			fmt.Fprintf(os.Stderr, "Skipping Snowdonia site %q as no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
+			return
+		}
+		id := strings.ReplaceAll(href, "/", "-")
+		site := Site{
+			Club:    "Snowdonia",
+			SiteID:  id,
+			Name:    a.Text(),
+			SiteURL: "https://www.snowdoniaskysports.co.uk/" + href,
+		}
+		sites = append(sites, site)
+	})
+
+	var enrichedSites []Site
+	for i := range sites {
+		err := SnowdoniaSite(&sites[i])
+		if err == nil {
+			enrichedSites = append(enrichedSites, sites[i])
+		} else if err, ok := err.(*url.Error); !ok || err.Err != errLeavingClub {
+			fmt.Fprintf(os.Stderr, "Cannot enrich %q: %s\n", sites[i].Name, err)
+		}
+	}
+
+	return enrichedSites, nil
+}
+
+func SnowdoniaSite(site *Site) error {
+	r, err := openPage(site.SiteURL)
+	if err != nil {
+		return err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	values := doc.Find("div.content div.node-flying-site")
+	site.Wind = 	values.Find("div.field-name-field-best-wind-cardinal div.field-item").Text()
+	gridRef := 	sanitiseGridRef(values.Find("div.field-name-field-grid-ref div.field-item").Text())
+	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, site.Name)
+	}
+	site.Loc.Lat = lat
+	site.Loc.Lon = lon
+
+	return nil
+}
+
 func WelshBorders() ([]Site, error) {
 	r, err := openPage("https://paraglidingwales.co.uk/general-information/")
 	if err != nil {
@@ -399,18 +466,17 @@ func WelshBorders() ([]Site, error) {
 
 	var sites []Site
 	doc.Find("div.entry-content table tr").Each(func(i int, s *goquery.Selection) {
-		a := s.Find("td:nth-child(1) > a")
+		a := s.Find("td:nth-child(1) a")
 		href := a.AttrOr("href", "")
 		if href == "" {
+			fmt.Fprintf(os.Stderr, "Skipping MWHGPC site %q as no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
 			return
 		}
 		id := path.Base(href)
 		name := a.Text()
 		gridRef := 	sanitiseGridRef(s.Find("td:nth-child(4) span").Text())
+
 		wind := strings.TrimSpace(s.Find("td:nth-child(3)").Text())
-		if gridRef == "" || wind == "" {
-			return
-		}
 		lat, lon, err := osgrid.OSGridToLatLon(gridRef)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, name)
@@ -428,17 +494,7 @@ func WelshBorders() ([]Site, error) {
 		sites = append(sites, site)
 	})
 
-	var enrichedSites []Site
-	for i := range sites {
-		err := MidWalesSite(&sites[i])
-		if err == nil {
-			enrichedSites = append(enrichedSites, sites[i])
-		} else if err, ok := err.(*url.Error); !ok || err.Err != errLeavingClub {
-			fmt.Fprintf(os.Stderr, "Cannot enrich %q: %s\n", sites[i].Name, err)
-		}
-	}
-
-	return enrichedSites, nil
+	return sites, nil
 }
 
 

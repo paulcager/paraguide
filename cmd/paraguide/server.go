@@ -41,6 +41,8 @@ func main() {
 	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
 	flag.Parse()
 
+	http.DefaultClient.Timeout = time.Minute
+
 	model["apiVersion"] = apiVersion
 
 	clubs, err := loadClubs()
@@ -54,6 +56,9 @@ func main() {
 		panic(err)
 	}
 	model["sites"] = sites
+	if err := saveSites(sites); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not save sites file: %s\n", err)
+	}
 
 	forecasts, err := loadLookup(sheet, "Forecasts!A:B")
 	if err != nil {

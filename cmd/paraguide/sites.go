@@ -1,17 +1,19 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/paulcager/paraguide/scraping"
 	"net/url"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/paulcager/paraguide/scraping"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
@@ -84,56 +86,43 @@ func loadLookup(sheet string, ranges string) (map[string]string, error) {
 
 func loadSites(clubs map[string]Club) (map[string]Site, error) {
 	sites := make(map[string]Site)
-	err := loadSitesFromSheet(sites, sheet, clubs)
-	n := len(sites)
 
-	if err == nil && includeKMLSites {
-		err = loadSitesFromKml(sites, "NorthernSites.kml", clubs)
+	// Load the least reliable sources of data first, so that less reliable sources can be overwritten by
+	// more reliable. In particular, we load from the spreadsheet last, so that any manual corrections can be
+	// specified there.
+
+	if includeKMLSites {
+		if err := loadSitesFromKml(sites, "NorthernSites.kml", clubs); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not load NorthernSites.kml: %s\n", err)
+		}
 	}
 
-	if pennineSites, err := scraping.Pennine(); err == nil {
-		addScraped(sites, pennineSites)
-	} else {
-		// Log error but carry on
-		fmt.Fprintf(os.Stderr, "Could not add Pennine sites: %s\n", err)
+	scrapers := map[string]func() ([]scraping.Site, error){
+		"Pennine":      scraping.Pennine,
+		"Dales":        scraping.Dales,
+		"NorthWales":   scraping.NorthWales,
+		"MidWales":     scraping.MidWales,
+		"WelshBorders": scraping.WelshBorders,
+		"LakeDistrict": scraping.LakeDistrict,
+		"Snowdonia":    scraping.Snowdonia,
 	}
 
-	if dalesSites, err := scraping.Dales(); err == nil {
-		addScraped(sites, dalesSites)
-	} else {
-		// Log error but carry on
-		fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
+	for name := range scrapers {
+		if scrapedSites, err := scrapers[name](); err == nil {
+			addScraped(sites, scrapedSites)
+			fmt.Fprintf(os.Stderr, "Added %d %s sites\n", len(scrapedSites), name)
+		} else {
+			// Log error but carry on
+			fmt.Fprintf(os.Stderr, "Could not add %s sites: %s\n", name, err)
+		}
 	}
 
-	if northWalesSites, err := scraping.NorthWales(); err == nil {
-		addScraped(sites, northWalesSites)
-	} else {
-		// Log error but carry on
-		fmt.Fprintf(os.Stderr, "Could not add Dales sites: %s\n", err)
+	sheetSites, err := loadSitesFromSheet(sheet, clubs)
+	for k, v := range sheetSites {
+		sites[k] = v
 	}
 
-	if lakeDistrict, err := scraping.LakeDistrict(); err == nil {
-		addScraped(sites, lakeDistrict)
-	} else {
-		// Log error but carry on
-		fmt.Fprintf(os.Stderr, "Could not add Lake District sites: %s\n", err)
-	}
-
-	if midWales, err := scraping.MidWales(); err == nil {
-		addScraped(sites, midWales)
-	} else {
-		// Log error but carry on
-		fmt.Fprintf(os.Stderr, "Could not add Mid Wales sites: %s\n", err)
-	}
-
-	//if welshBorders, err := scraping.WelshBorders(); err == nil {
-	//	addScraped(sites, welshBorders)
-	//} else {
-	//	// Log error but carry on
-	//	fmt.Fprintf(os.Stderr, "Could not add Welsh Borders sites: %s\n", err)
-	//}
-
-	fmt.Fprintf(os.Stderr, "Read %d + %d = %d sites\n", n, len(sites)-n, len(sites))
+	fmt.Fprintf(os.Stderr, "Added %d sites from the spreadsheet (total is now %d)\n", len(sheetSites), len(sites))
 	return sites, err
 }
 
@@ -158,21 +147,24 @@ func addScraped(sites map[string]Site, scraped []scraping.Site) {
 	}
 }
 
-func loadSitesFromSheet(sites map[string]Site, sheet string, clubs map[string]Club) error {
+func loadSitesFromSheet(sheet string, clubs map[string]Club) (map[string]Site, error) {
 	ctx := context.Background()
 	sheetsService, err := sheets.NewService(ctx,
 		option.WithScopes(sheets.SpreadsheetsReadonlyScope),
 		option.WithAPIKey(apiKey),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp, err := sheetsService.Spreadsheets.Values.Get(sheet, "Sites!A2:G").Do()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var lastErr error
+	var (
+		lastErr error
+		sites   = make(map[string]Site)
+	)
 
 	for _, row := range resp.Values {
 		parking, err1 := parseLocations(row[2].(string))
@@ -218,7 +210,7 @@ func loadSitesFromSheet(sites map[string]Site, sheet string, clubs map[string]Cl
 		sites[id] = site
 	}
 
-	return lastErr
+	return sites, lastErr
 }
 
 func loadSitesFromKml(sites map[string]Site, fileName string, clubs map[string]Club) error {
@@ -316,6 +308,26 @@ func loadClubs() (map[string]Club, error) {
 	return clubs, nil
 }
 
+func saveSites(sites map[string]Site) error {
+	err := os.MkdirAll("downloads", 0700)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create("downloads/sites-" + time.Now().Format("2006-01-02")+".json.gz")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	w := gzip.NewWriter(file)
+	defer w.Close()
+
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	return enc.Encode(sites)
+}
+
 func anyError(errors ...error) error {
 	for _, err := range errors {
 		if err != nil {
@@ -328,7 +340,7 @@ func anyError(errors ...error) error {
 var (
 	spaceRegexp = regexp.MustCompile(`\s+`)
 	commaRegexp = regexp.MustCompile(`,\s*`)
-	andRegexp = regexp.MustCompile(` and `)
+	andRegexp   = regexp.MustCompile(` and `)
 )
 
 func parseLocations(s string) ([]Loc, error) {
@@ -370,7 +382,7 @@ func parseLocations(s string) ([]Loc, error) {
 // or "W to NW" (Pennine).
 func parseWind(s string) ([]WindRange, error) {
 	if s == "" {
-		return nil, nil
+		return []WindRange{}, nil
 	}
 
 	parts := commaRegexp.Split(strings.ReplaceAll(s, "/", ","), -1)

@@ -6,6 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/golang/geo v0.0.0-20200730024412-e86565bf3f35
+	github.com/helloeave/json v1.15.3
 	github.com/kellydunn/golang-geo v0.7.0
 	github.com/kr/pretty v0.2.1
 	github.com/kylelemons/go-gypsy v1.0.0 // indirect
