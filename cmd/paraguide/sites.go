@@ -105,6 +105,7 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 		"WelshBorders": scraping.WelshBorders,
 		"LakeDistrict": scraping.LakeDistrict,
 		"Snowdonia":    scraping.Snowdonia,
+		"Cayley":       scraping.Cayley,
 	}
 
 	for name := range scrapers {
@@ -314,7 +315,7 @@ func saveSites(sites map[string]Site) error {
 		return err
 	}
 
-	file, err := os.Create("downloads/sites-" + time.Now().Format("2006-01-02")+".json.gz")
+	file, err := os.Create("downloads/sites-" + time.Now().Format("2006-01-02") + ".json.gz")
 	if err != nil {
 		return err
 	}

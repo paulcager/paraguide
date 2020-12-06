@@ -270,7 +270,7 @@ func LakeDistrict() ([]Site, error) {
 			SiteID:  id,
 			Name:    a.Text(),
 			SiteURL: "https://www.cumbriasoaringclub.co.uk/SiteManagement/" + href,
-			Wind: wind,
+			Wind:    wind,
 		}
 		sites = append(sites, site)
 	})
@@ -373,8 +373,8 @@ func MidWalesSite(site *Site) error {
 	}
 
 	// #block-system-main > div > div > div.field.field-name-field-wind.field-type-computed.field-label-inline.clearfix > div.field-items > div
-	site.Wind = 	doc.Find("div.field-name-field-wind div.field-item").First().Text()
-	gridRef := 	sanitiseGridRef(doc.Find("div.field-name-field-ref div.field-item").First().Text())
+	site.Wind = doc.Find("div.field-name-field-wind div.field-item").First().Text()
+	gridRef := sanitiseGridRef(doc.Find("div.field-name-field-ref div.field-item").First().Text())
 	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, site.Name)
@@ -440,8 +440,8 @@ func SnowdoniaSite(site *Site) error {
 	}
 
 	values := doc.Find("div.content div.node-flying-site")
-	site.Wind = 	values.Find("div.field-name-field-best-wind-cardinal div.field-item").Text()
-	gridRef := 	sanitiseGridRef(values.Find("div.field-name-field-grid-ref div.field-item").Text())
+	site.Wind = values.Find("div.field-name-field-best-wind-cardinal div.field-item").Text()
+	gridRef := sanitiseGridRef(values.Find("div.field-name-field-grid-ref div.field-item").Text())
 	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, site.Name)
@@ -474,7 +474,7 @@ func WelshBorders() ([]Site, error) {
 		}
 		id := path.Base(href)
 		name := a.Text()
-		gridRef := 	sanitiseGridRef(s.Find("td:nth-child(4) span").Text())
+		gridRef := sanitiseGridRef(s.Find("td:nth-child(4) span").Text())
 
 		wind := strings.TrimSpace(s.Find("td:nth-child(3)").Text())
 		lat, lon, err := osgrid.OSGridToLatLon(gridRef)
@@ -486,7 +486,7 @@ func WelshBorders() ([]Site, error) {
 			SiteID:  id,
 			Name:    name,
 			SiteURL: href,
-			Wind: wind,
+			Wind:    wind,
 		}
 		site.Loc.Lat = lat
 		site.Loc.Lon = lon
@@ -497,6 +497,90 @@ func WelshBorders() ([]Site, error) {
 	return sites, nil
 }
 
+func Cayley() ([]Site, error) {
+	r, err := openPage("https://www.cayleyparagliding.co.uk/")
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var sites []Site
+	doc.Find("ul.sub-menu span:contains('Sites (alphabetically)')").Parent().Siblings().Find("li a").Each(func(i int, s *goquery.Selection) {
+		href := s.AttrOr("href", "")
+		if href == "" {
+			fmt.Fprintf(os.Stderr, "Skipping Cayley site %q as no hyperlink. Site probably closed\n", s.Text())
+			return
+		}
+		id := path.Base(href)
+		name := s.Text()
+		site := Site{
+			Club:    "Cayley",
+			SiteID:  id,
+			Name:    name,
+			SiteURL: href,
+		}
+
+		sites = append(sites, site)
+	})
+
+	var enrichedSites []Site
+	for i := range sites {
+		err := CayleySite(&sites[i])
+		if err == nil {
+			enrichedSites = append(enrichedSites, sites[i])
+		} else if err, ok := err.(*url.Error); !ok || err.Err != errLeavingClub {
+			fmt.Fprintf(os.Stderr, "Cannot enrich %q: %s\n", sites[i].Name, err)
+		}
+	}
+
+	return enrichedSites, nil
+}
+
+func CayleySite(site *Site) error {
+	r, err := openPage(site.SiteURL)
+	if err != nil {
+		return err
+	}
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
+
+	site.Wind = doc.Find("h1:contains('Paragliding') ~ :contains('Wind Direction:')").Text()
+	if ind := strings.LastIndexByte(site.Wind, ':'); ind != -1 {
+		site.Wind = site.Wind[ind+1:]
+	}
+
+	mapRef := doc.Find("h1:contains('Paragliding') ~ :contains('Google Map Link:') a").AttrOr("href", "")
+	start := strings.IndexByte(mapRef, '@')
+	if start == -1 {
+		fmt.Fprintf(os.Stderr, "Could not extract lat/lon for site %q: %s\n", site.Name, mapRef)
+		return nil
+	}
+	parts := strings.Split(mapRef[start+1:], ",")
+	if len(parts) < 2 {
+		fmt.Fprintf(os.Stderr, "Could not extract lat/lon for site %q: %s\n", site.Name, mapRef)
+		return nil
+	}
+
+	lat, err1 := strconv.ParseFloat(parts[0], 64)
+	lon, err2 := strconv.ParseFloat(parts[1], 64)
+	if err1 != nil || err2 != nil {
+		fmt.Fprintf(os.Stderr, "Could not extract lat/lon for site %q: %s\n", site.Name, mapRef)
+		return nil
+	}
+
+	site.Loc.Lat = lat
+	site.Loc.Lon = lon
+
+	return nil
+}
 
 func sanitiseGridRef(gridRef string) string {
 	ind := strings.Index(gridRef, "(")
