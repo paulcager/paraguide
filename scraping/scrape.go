@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,7 +15,10 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/paulcager/gosdata/osgrid"
+)
+
+var (
+	OSGridServer = "http://localhost:9090/gridref/"
 )
 
 type Site struct {
@@ -96,7 +100,7 @@ func pennineSite(s *Site) error {
 	items := doc.Find("table.table td").Map(func(i int, s *goquery.Selection) string { return s.Text() })
 	s.Wind = items[0]
 	gridRef := sanitiseGridRef(items[1])
-	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+	lat, lon, err := toLatLon(gridRef)
 	if err != nil {
 		return fmt.Errorf("invalid gridref %q: %s", gridRef, err)
 	}
@@ -222,7 +226,7 @@ func NorthWales() ([]Site, error) {
 		doc.Find("div" + href + " table.infotable tr").Each(func(i int, s *goquery.Selection) {
 			if s.Find("th").Text() == "Map Location" {
 				gridRef := sanitiseGridRef(s.Find("td").Text())
-				lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+				lat, lon, err := toLatLon(gridRef)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not decode grid ref %q\n", s.Find("td").Text())
 				}
@@ -307,7 +311,7 @@ func LakeDistrictSite(site *Site) error {
 
 		if len(tds) >= 2 && strings.HasPrefix(tds[0], "Grid Ref") {
 			gridRef := sanitiseGridRef(tds[1])
-			lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+			lat, lon, err := toLatLon(gridRef)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Could not decode grid ref %q\n", tds[1])
 			}
@@ -375,7 +379,7 @@ func MidWalesSite(site *Site) error {
 	// #block-system-main > div > div > div.field.field-name-field-wind.field-type-computed.field-label-inline.clearfix > div.field-items > div
 	site.Wind = doc.Find("div.field-name-field-wind div.field-item").First().Text()
 	gridRef := sanitiseGridRef(doc.Find("div.field-name-field-ref div.field-item").First().Text())
-	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+	lat, lon, err := toLatLon(gridRef)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, site.Name)
 	}
@@ -442,7 +446,7 @@ func SnowdoniaSite(site *Site) error {
 	values := doc.Find("div.content div.node-flying-site")
 	site.Wind = values.Find("div.field-name-field-best-wind-cardinal div.field-item").Text()
 	gridRef := sanitiseGridRef(values.Find("div.field-name-field-grid-ref div.field-item").Text())
-	lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+	lat, lon, err := toLatLon(gridRef)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, site.Name)
 	}
@@ -477,7 +481,7 @@ func WelshBorders() ([]Site, error) {
 		gridRef := sanitiseGridRef(s.Find("td:nth-child(4) span").Text())
 
 		wind := strings.TrimSpace(s.Find("td:nth-child(3)").Text())
-		lat, lon, err := osgrid.OSGridToLatLon(gridRef)
+		lat, lon, err := toLatLon(gridRef)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not decode grid ref %q for site %q\n", gridRef, name)
 		}
@@ -611,4 +615,21 @@ func openPage(url string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("HTTP status %q from %q", resp.Status, url)
 	}
 	return resp.Body, nil
+}
+
+func toLatLon(gridRef string) (lat float64, lon float64, err error) {
+	//return osgrid.OSGridToLatLon(gridRef)
+	resp, err := http.Get(OSGridServer + url.QueryEscape(strings.ReplaceAll(gridRef, " ", "")))
+	if err != nil {
+		return 0, 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("failed to decode %q: %s\n", gridRef, resp.Status)
+		io.Copy(log.Writer(), resp.Body)
+		return 0, 0, fmt.Errorf("failed to decode %q: %s", gridRef, resp.Status)
+	}
+
+	_, err = fmt.Fscanf(resp.Body, "%f,%f", &lat, &lon)
+	return lat, lon, err
 }

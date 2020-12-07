@@ -108,14 +108,28 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 		"Cayley":       scraping.Cayley,
 	}
 
+	// Some site guides require that we visit a page per site. To speed things up, process all
+	// clubs in parallel.
+	ch := make(chan []scraping.Site)
+
 	for name := range scrapers {
-		if scrapedSites, err := scrapers[name](); err == nil {
-			addScraped(sites, scrapedSites)
-			fmt.Fprintf(os.Stderr, "Added %d %s sites\n", len(scrapedSites), name)
-		} else {
-			// Log error but carry on
-			fmt.Fprintf(os.Stderr, "Could not add %s sites: %s\n", name, err)
-		}
+		go func(name string) {
+			scrapedSites, err := scrapers[name]()
+			if err != nil {
+				// Log error but carry on
+				fmt.Fprintf(os.Stderr, "Could not add %s sites: %s\n", name, err)
+				ch <- nil
+				return
+			}
+
+			fmt.Fprintf(os.Stderr, "Adding %d %s sites\n", len(scrapedSites), name)
+			ch <- scrapedSites
+		}(name)
+	}
+
+	for i := 0; i < len(scrapers); i++ {
+		scrapedSites := <-ch
+		addScraped(sites, scrapedSites)
 	}
 
 	sheetSites, err := loadSitesFromSheet(sheet, clubs)
@@ -442,14 +456,14 @@ func parseWind(s string) ([]WindRange, error) {
 			}
 		}
 
-		// Some sites are specified as e.g. "SW-SE" rather than "SE-SW". Use a heuristic that sites tend not to
-		// have continuous range > 180 degrees.
+		// Most sites are specified clockwise, e.g. "W-NW" rather than "NW-W". Use a heuristic to detect sites that
+		// have wind directions listed "the wrong way wound". Assume that no site legitimately takes wind for
+		// a continuous range > 180 degrees.
 		rang := to - from
 		if to < from {
 			rang = 360 - from + to
 		}
 		if rang > 180 {
-			fmt.Println("Swapping", part)
 			from, to = to, from
 		}
 
@@ -463,6 +477,7 @@ func parseWind(s string) ([]WindRange, error) {
 	return dirs, lastErr
 }
 
+// Map from points of the compass (e.g. "NNE") to the value in degrees.
 var directionMap map[string]float64
 
 func init() {
@@ -481,5 +496,3 @@ func parseDirection(s string) (float64, error) {
 		return 0, fmt.Errorf("invalid direction %q", s)
 	}
 }
-
-//NB: to translate to OSGB, see https://www.bgs.ac.uk/data/webservices/CoordConvert_LL_BNG.cfc?method=LatLongToBNG&lat=53.191443&lon=-1.849545
