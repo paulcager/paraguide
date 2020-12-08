@@ -668,7 +668,7 @@ func toGridRef(lat float64, lon float64) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("failed to decode %f,%f: %s\n", lat, lon, resp.Status)
 		io.Copy(log.Writer(), resp.Body)
-		return "", fmt.Errorf("failed to decode %%f,%f: %s", lat, lon, resp.Status)
+		return "", fmt.Errorf("failed to decode %f,%f: %s", lat, lon, resp.Status)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
