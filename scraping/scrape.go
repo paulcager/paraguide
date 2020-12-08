@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,7 +19,7 @@ import (
 )
 
 var (
-	OSGridServer = "http://localhost:9090/gridref/"
+	OSGridServer = "http://localhost:9090/"
 )
 
 type Site struct {
@@ -225,11 +226,35 @@ func NorthWales() ([]Site, error) {
 
 		doc.Find("div" + href + " table.infotable tr").Each(func(i int, s *goquery.Selection) {
 			if s.Find("th").Text() == "Map Location" {
+
 				gridRef := sanitiseGridRef(s.Find("td").Text())
 				lat, lon, err := toLatLon(gridRef)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not decode grid ref %q\n", s.Find("td").Text())
 				}
+
+				// The OS grid refs on the site look to have copy-and paste errors. Extract lat,lon data from
+				// the URLs as well, display a comparison of the two (to help fix the site guides), but use
+				// lat,lon.
+				latLon := s.Find("td a").AttrOr("href", "")
+				start := strings.Index(latLon, "&cp=")
+				if start != -1 {
+					latLon = latLon[start+4:]
+					end := strings.IndexByte(latLon, '&')
+					if end != -1 {
+						latLon = latLon[:end]
+						parts := strings.Split(latLon, "~")
+						lat1, err1 := strconv.ParseFloat(parts[0], 64)
+						lon1, err2 := strconv.ParseFloat(parts[1], 64)
+						if err1 == nil && err2 == nil {
+							distance := math.Sqrt((lat1-lat)*(lat1-lat) + (lon1-lon)*(lon1-lon))
+							gridRef1, _ := toGridRef(lat1, lon1)
+							fmt.Printf("%32s %.4f %s %s\n", site.Name, distance, gridRef1, gridRef)
+							lat, lon = lat1, lon1
+						}
+					}
+				}
+
 				site.Loc.Lat = lat
 				site.Loc.Lon = lon
 			}
@@ -619,7 +644,7 @@ func openPage(url string) (io.ReadCloser, error) {
 
 func toLatLon(gridRef string) (lat float64, lon float64, err error) {
 	//return osgrid.OSGridToLatLon(gridRef)
-	resp, err := http.Get(OSGridServer + url.QueryEscape(strings.ReplaceAll(gridRef, " ", "")))
+	resp, err := http.Get(OSGridServer + "gridref/" + url.QueryEscape(strings.ReplaceAll(gridRef, " ", "")))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -632,4 +657,20 @@ func toLatLon(gridRef string) (lat float64, lon float64, err error) {
 
 	_, err = fmt.Fscanf(resp.Body, "%f,%f", &lat, &lon)
 	return lat, lon, err
+}
+
+func toGridRef(lat float64, lon float64) (string, error) {
+	resp, err := http.Get(OSGridServer + "latlon/" + fmt.Sprintf("%f,%f", lat, lon))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("failed to decode %f,%f: %s\n", lat, lon, resp.Status)
+		io.Copy(log.Writer(), resp.Body)
+		return "", fmt.Errorf("failed to decode %%f,%f: %s", lat, lon, resp.Status)
+	}
+
+	b, err := ioutil.ReadAll(resp.Body)
+	return string(b), err
 }

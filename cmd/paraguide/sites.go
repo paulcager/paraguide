@@ -151,7 +151,7 @@ func addScraped(sites map[string]Site, scraped []scraping.Site) {
 		newSite := Site{
 			ID:        s.Club + "-" + s.SiteID,
 			Name:      s.Name,
-			Club:      Club{ID: s.Club},
+			Club:      Club{ID: s.Club, Name: s.Club,},
 			Takeoff:   []Loc{s.Loc},
 			Parking:   []Loc{},
 			Landing:   []Loc{},
@@ -213,7 +213,7 @@ func loadSitesFromSheet(sheet string, clubs map[string]Club) (map[string]Site, e
 		}
 
 		site := Site{
-			ID:        id,
+			ID:        club.ID + "-" + id,
 			Club:      club,
 			Name:      name,
 			Parking:   parking,
@@ -222,7 +222,7 @@ func loadSitesFromSheet(sheet string, clubs map[string]Club) (map[string]Site, e
 			Wind:      wind,
 			SiteGuide: siteGuide,
 		}
-		sites[id] = site
+		sites[site.ID] = site
 	}
 
 	return sites, lastErr

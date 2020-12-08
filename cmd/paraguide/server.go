@@ -3,8 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/paulcager/paraguide/scraping"
-	flag "github.com/spf13/pflag"
 	"image/png"
 	"log"
 	"math"
@@ -16,6 +14,8 @@ import (
 	"time"
 
 	"github.com/paulcager/paraguide/airspace"
+	"github.com/paulcager/paraguide/scraping"
+	flag "github.com/spf13/pflag"
 )
 
 const (
@@ -41,7 +41,7 @@ func main() {
 	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
 	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
 	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
-	flag.StringVar(&scraping.OSGridServer, "osgrid-server", "http://localhost:9090/gridref/", "REST server address for OS grid ref translation")
+	flag.StringVar(&scraping.OSGridServer, "osgrid-server", "http://localhost:9090/", "REST server address for OS grid ref translation")
 	flag.Parse()
 
 	http.DefaultClient.Timeout = time.Minute
@@ -62,6 +62,21 @@ func main() {
 	if err := saveSites(sites); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not save sites file: %s\n", err)
 	}
+
+	// Add a sorted list of sites, to display in menus etc. Sorted on club name, then site name.
+	siteIDs := make([]string, 0, len(sites))
+	for id := range sites {
+		siteIDs = append(siteIDs, id)
+	}
+	sort.Slice(siteIDs, func (i, j int) bool{
+		siteI := sites[siteIDs[i]]
+		siteJ := sites[siteIDs[j]]
+		if siteI.Club.ID != siteJ.Club.ID {
+			return siteI.Club.ID < siteJ.Club.ID
+		}
+		return siteI.Name < siteJ.Name
+	})
+	model["siteIDs"] = siteIDs
 
 	forecasts, err := loadLookup(sheet, "Forecasts!A:B")
 	if err != nil {
