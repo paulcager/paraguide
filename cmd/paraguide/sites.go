@@ -3,6 +3,7 @@ package main
 import (
 	"compress/gzip"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -151,7 +152,7 @@ func addScraped(sites map[string]Site, scraped []scraping.Site) {
 		newSite := Site{
 			ID:        s.Club + "-" + s.SiteID,
 			Name:      s.Name,
-			Club:      Club{ID: s.Club, Name: s.Club,},
+			Club:      Club{ID: s.Club, Name: s.Club},
 			Takeoff:   []Loc{s.Loc},
 			Parking:   []Loc{},
 			Landing:   []Loc{},
@@ -328,7 +329,14 @@ func saveSites(sites map[string]Site) error {
 	if err != nil {
 		return err
 	}
-
+	err1 := saveJson(sites)
+	err2 := saveCSV(sites)
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+func saveJson(sites map[string]Site) error {
 	file, err := os.Create("downloads/sites-" + time.Now().Format("2006-01-02") + ".json.gz")
 	if err != nil {
 		return err
@@ -341,6 +349,54 @@ func saveSites(sites map[string]Site) error {
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 	return enc.Encode(sites)
+}
+
+func saveCSV(sites map[string]Site) error {
+	sorted := sortSites(sites)
+
+	file, err := os.Create("downloads/sites-" + time.Now().Format("2006-01-02") + ".csv")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	locString := func(l []Loc) string {
+		var ret []string
+		for i := range l {
+			ret = append(ret, l[i].String())
+		}
+
+		return strings.Join(ret, ", ")
+	}
+
+	windString := func(w []WindRange) string {
+		var ret []string
+		for i := range w {
+			ret = append(ret, w[i].Text)
+		}
+
+		return strings.Join(ret, ", ")
+	}
+
+	csvWriter := csv.NewWriter(file)
+	for _, id := range sorted {
+		s := sites[id]
+		values := []string{
+			s.Club.ID,
+			s.Name,
+			locString(s.Parking),
+			locString(s.Takeoff),
+			locString(s.Landing),
+			windString(s.Wind),
+			s.SiteGuide,
+		}
+
+		if err := csvWriter.Write(values); err != nil {
+			return err
+		}
+	}
+	csvWriter.Flush()
+	return csvWriter.Error()
 }
 
 func anyError(errors ...error) error {

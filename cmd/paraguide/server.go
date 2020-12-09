@@ -63,19 +63,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Warning: could not save sites file: %s\n", err)
 	}
 
-	// Add a sorted list of sites, to display in menus etc. Sorted on club name, then site name.
-	siteIDs := make([]string, 0, len(sites))
-	for id := range sites {
-		siteIDs = append(siteIDs, id)
-	}
-	sort.Slice(siteIDs, func (i, j int) bool{
-		siteI := sites[siteIDs[i]]
-		siteJ := sites[siteIDs[j]]
-		if siteI.Club.ID != siteJ.Club.ID {
-			return siteI.Club.ID < siteJ.Club.ID
-		}
-		return siteI.Name < siteJ.Name
-	})
+	siteIDs := sortSites(sites)
 	model["siteIDs"] = siteIDs
 
 	forecasts, err := loadLookup(sheet, "Forecasts!A:B")
@@ -104,6 +92,23 @@ func main() {
 
 	s := makeHTTPServer(sites, listenPort)
 	log.Fatal(s.ListenAndServe())
+}
+
+func sortSites(sites map[string]Site) []string {
+	// Add a sorted list of sites, to display in menus etc. Sorted on club name, then site name.
+	siteIDs := make([]string, 0, len(sites))
+	for id := range sites {
+		siteIDs = append(siteIDs, id)
+	}
+	sort.Slice(siteIDs, func(i, j int) bool {
+		siteI := sites[siteIDs[i]]
+		siteJ := sites[siteIDs[j]]
+		if siteI.Club.ID != siteJ.Club.ID {
+			return siteI.Club.ID < siteJ.Club.ID
+		}
+		return siteI.Name < siteJ.Name
+	})
+	return siteIDs
 }
 
 func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
