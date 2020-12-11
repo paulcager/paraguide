@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/paulcager/paraguide/airspace"
-	"github.com/paulcager/paraguide/scraping"
 	flag "github.com/spf13/pflag"
 )
 
@@ -28,7 +27,6 @@ var (
 	imageCache      time.Duration
 	staticCache     time.Duration
 	metRefresh      time.Duration
-	osgridServer string
 	noWeather       bool
 	listenPort      string
 	includeKMLSites bool
@@ -41,7 +39,6 @@ func main() {
 	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
 	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
 	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
-	flag.StringVar(&scraping.OSGridServer, "osgrid-server", "http://localhost:9090/", "REST server address for OS grid ref translation")
 	flag.Parse()
 
 	http.DefaultClient.Timeout = time.Minute
