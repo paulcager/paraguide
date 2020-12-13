@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/paulcager/gosdata/osgrid"
+	"github.com/paulcager/osgridref"
 )
 
 type Site struct {
@@ -638,7 +638,7 @@ func openPage(url string) (io.ReadCloser, error) {
 }
 
 func toLatLon(gridRef string) (lat float64, lon float64, err error) {
-	g, err := osgrid.ParseOsGridRef(gridRef)
+	g, err := osgridref.ParseOsGridRef(gridRef)
 	if err != nil {
 		return 0, 0, err
 	}

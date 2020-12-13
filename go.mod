@@ -11,7 +11,7 @@ require (
 	github.com/kylelemons/go-gypsy v1.0.0 // indirect
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/llgcode/draw2d v0.0.0-20200930101115-bfaf5d914d1e
-	github.com/paulcager/gosdata v1.0.0
+	github.com/paulcager/osgridref v1.0.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
 	github.com/ziutek/mymysql v1.5.4 // indirect
