@@ -2,7 +2,9 @@ package airspace
 
 import (
 	"github.com/kr/pretty"
+	"github.com/paulcager/osgridref"
 	"github.com/stretchr/testify/require"
+	"reflect"
 	"testing"
 )
 import "github.com/stretchr/testify/assert"
@@ -91,4 +93,28 @@ func TestDownload(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Greater(t, len(a), 600)
+}
+
+func Test_arcToPolygon(t *testing.T) {
+	type args struct {
+		centre       osgridref.LatLon
+		radius       float64
+		initialPoint osgridref.LatLon
+		to           osgridref.LatLon
+		dir          float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want []osgridref.LatLon
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := arcToPolygon(tt.args.centre, tt.args.radius, tt.args.initialPoint, tt.args.to, tt.args.dir); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("arcToPolygon() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

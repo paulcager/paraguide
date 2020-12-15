@@ -88,6 +88,7 @@ func pennineSite(s *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -150,6 +151,7 @@ func dalesSite(s *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -317,6 +319,7 @@ func LakeDistrictSite(site *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -390,6 +393,7 @@ func MidWalesSite(site *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -457,6 +461,7 @@ func SnowdoniaSite(site *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
@@ -570,6 +575,7 @@ func CayleySite(site *Site) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {

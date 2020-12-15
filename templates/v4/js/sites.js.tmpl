@@ -7,7 +7,9 @@ var sites = {
 var airspace;
 var map;
 var weather = {}
-var landColor = "20e000";
+var infoWindow = new google.maps.InfoWindow({});
+
+const landColor = "20e000";
 var pinImage = new google.maps.MarkerImage(
     "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=L|" + landColor,
     new google.maps.Size(21, 34),
@@ -29,9 +31,6 @@ function weatherImage(windSpeed, windDirection) {
         null,
         new google.maps.Point(40, 40));
 }
-
-
-var infoWindow = new google.maps.InfoWindow({});
 
 function enrich_sites() {
     for (var id of Object.keys(sites)) {
@@ -144,6 +143,8 @@ function initialize() {
     toggleLanding();
     toggleParking();
     toggleAirspace();
+
+    addListeners();
 }
 
 function toggleLanding() {
@@ -251,3 +252,16 @@ function toggleWeather() {
         }
     });
 }
+
+function addListeners() {
+    google.maps.event.addListener(map, "rightclick", function(event) {
+            console.log("Event", event);
+            var lat = event.latLng.lat();
+            var lng = event.latLng.lng();
+            // populate yor box/field with lat, lng
+            alert("Lat=" + lat + "; Lng=" + lng);
+    });
+    console.log("addListeners exit");
+}
+
+console.log("End of sites.js");

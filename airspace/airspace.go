@@ -2,15 +2,15 @@ package airspace
 
 import (
 	"fmt"
-	_ "github.com/golang/geo/r2"
-	"github.com/kellydunn/golang-geo"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/paulcager/osgridref"
+	"gopkg.in/yaml.v2"
 )
 
 // Download airspace defs in yaml from https://gitlab.com/ahsparrow/airspace
@@ -19,27 +19,51 @@ import (
 var (
 	prohibitedAirspaceClasses = map[string]bool{
 		"A": true,  // Most airways; London/Manchester TMAs.
+		"B": true,  // Not used in UK
 		"C": true,  // Mostly above FL195 and some airways.
 		"D": true,  // Most aerodrome CTRs and CTAs. Some TMAs and lower levels of selected airways.
-		"E": false, // Scottish airways. ATC clearance not required for VFR flight, pilots encouraged to contact ATC.
+		"E": true,  // Scottish airways. Technically permissible (ATC clearance not required for VFR flight), but pilots encouraged to contact ATC.
+		"F": false, // Not used in UK
 		"G": false, // ‘Open FIR’, ATC clearance not required, radio not required.
 	}
 
 	// Not all are strictly prohibited, some are "avoid unless ...."
 	prohibitedTypes = map[string]bool{
-		"MATZ": true, // Military ATZ
-		"ATZ":  true, // Air Traffic Zone
-		"RAT":  true, // Temporary restricted area
-		"RMZ":  true, // Radio mandatory zone
-		"TMZ":  true, // Transponder mandatory zone
+		"ATZ":  true, // Aerodrome Traffic Zone
+		"AWY":  true, // Airway
+		"CTA":  true, // Control Area (usually on top of a CTR).
+		"CTR":  true, // Control Region
+		"MATZ": true, // Military ATZ. Technically permissible.
 		"P":    true, // Prohibited area
 		"R":    true, // Restricted area
+		"RAT":  true, // Temporary restricted area
+		"RMZ":  true, // Radio mandatory zone
 		"TMA":  true, // Terminal control area
+		"TRA":  true, // Temporary reserved area
+		"TMZ":  true, // Transponder mandatory zone
+	}
+
+	dangerTypes = map[string]bool{
+		"AIAA":    true,  // Areas of intense arial activity
+		"D":       true,  // Danger area
+		"D_OTHER": true,  // Dangerous activity, but not a Danger area
+		"DZ":      true,  // Drop Zone
+		"GLIDER":  true,  // Gliding operations
+		"GVS":     false, // Gas venting station
+		"HIRTA":   true,  // High intensity radio transmission area
+		"ILS":     false, // ILS feather
+		"LASER":   true,  // Laser site.
+		"NOATZ":   true,  // Non-ATZ airfield
+		"UL":      false, // Ultra-light strip
 	}
 )
 
 func ClearanceRequired(f Feature) bool {
 	return prohibitedAirspaceClasses[f.Class] || prohibitedTypes[f.Type]
+}
+
+func Danger(f Feature) bool {
+	return dangerTypes[f.Type]
 }
 
 //func init() {
@@ -51,7 +75,7 @@ func ClearanceRequired(f Feature) bool {
 //	os.Exit(2)
 //}
 
-// This type is used to decode YAML data from https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml (and eqivalent).
+// This type is used to decode YAML data from https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml (and equivalent).
 type airspaceResponse struct {
 	Airspace []struct {
 		ID          string
@@ -85,6 +109,33 @@ type airspaceResponse struct {
 	}
 }
 
+type ratResponse struct {
+	Name     string
+	Type     string
+	Geometry []struct {
+		ID       string
+		Name     string
+		Class    string
+		Seqno    int
+		Boundary []struct {
+			// One of:
+			Circle struct {
+				Radius string
+				Centre string
+			}
+			Line []string
+			Arc  struct {
+				Dir    string
+				Radius string
+				Centre string
+				To     string
+			}
+		}
+		Lower string
+		Upper string
+	}
+}
+
 // Airspace definitions - similar to `airspaceResponse` but sanitised.
 // github.com/golang/geo/r2
 
@@ -104,17 +155,18 @@ type Volume struct {
 	Lower             float64
 	Upper             float64
 	ClearanceRequired bool
+	Danger            bool
 	// The (horizontal) shape will be either a circle or a polygon.
 	// One of:
 	Circle  Circle
-	Polygon Polygon // Don't use geo.Polygon here, as that doesn't do JSON serialisation properly.
+	Polygon Polygon
 }
 
-type Polygon []*geo.Point
+type Polygon []osgridref.LatLon
 
 type Circle struct {
 	Radius float64
-	Centre *geo.Point
+	Centre osgridref.LatLon
 }
 
 func Decode(data []byte) ([]Feature, error) {
@@ -163,9 +215,10 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 				Lower:             decodeHeight(g.Lower),
 				Upper:             decodeHeight(g.Upper),
 				ClearanceRequired: ClearanceRequired(feat),
+				Danger:            Danger(feat),
 			}
 
-			var currentPos *geo.Point
+			var currentPos osgridref.LatLon
 			for _, b := range g.Boundary {
 				if b.Circle.Radius != "" {
 					var err error
@@ -209,9 +262,9 @@ func normalise(a *airspaceResponse) ([]Feature, error) {
 	return features, nil
 }
 
-func arcToPolygon(centre *geo.Point, radius float64, initialPoint *geo.Point, to *geo.Point, dir float64) []*geo.Point {
-	initialAngleDeg := centre.BearingTo(initialPoint)
-	finalAngleDeg := centre.BearingTo(to)
+func arcToPolygon(centre osgridref.LatLon, radius float64, initialPoint osgridref.LatLon, to osgridref.LatLon, dir float64) []osgridref.LatLon {
+	initialAngleDeg := centre.InitialBearingTo(initialPoint)
+	finalAngleDeg := centre.InitialBearingTo(to)
 
 	if dir > 0 {
 		// Clockwise
@@ -224,9 +277,11 @@ func arcToPolygon(centre *geo.Point, radius float64, initialPoint *geo.Point, to
 		}
 	}
 
-	var poly []*geo.Point
+	// fmt.Printf("c=%s, r=%f, ini=%f, final=%f, dir=%f\n", centre, radius, initialAngleDeg, finalAngleDeg, dir)
+
+	var poly []osgridref.LatLon
 	for a := initialAngleDeg; dir*a < dir*finalAngleDeg; a += dir * 10 {
-		point := centre.PointAtDistanceAndBearing(radius/1000, a)
+		point := centre.DestinationPoint(radius, osgridref.Wrap360(a))
 		poly = append(poly, point)
 	}
 	poly = append(poly, to)
@@ -234,42 +289,42 @@ func arcToPolygon(centre *geo.Point, radius float64, initialPoint *geo.Point, to
 	return poly
 }
 
-func parseLatLng(str string) (*geo.Point, error) {
+func parseLatLng(str string) (osgridref.LatLon, error) {
 	returnedError := fmt.Errorf("bad point: %#q, must be in format %q (degrees,minutes,seconds)", str, "502257N 0033739W")
 
 	if len(str) != 16 || str[7] != ' ' {
-		return nil, returnedError
+		return osgridref.LatLon{}, returnedError
 	}
 
 	deg, err1 := strconv.ParseUint(str[0:2], 10, 64)
 	mm, err2 := strconv.ParseUint(str[2:4], 10, 64)
 	ss, err3 := strconv.ParseUint(str[4:6], 10, 64)
 	if err1 != nil || err2 != nil || err3 != nil {
-		return nil, returnedError
+		return osgridref.LatLon{}, returnedError
 	}
 
 	lat := float64(deg) + float64(mm)/60.0 + float64(ss)/2600.0
 	if str[6] == 'S' {
 		lat = -lat
 	} else if str[6] != 'N' {
-		return nil, returnedError
+		return osgridref.LatLon{}, returnedError
 	}
 
 	deg, err1 = strconv.ParseUint(str[8:11], 10, 64)
 	mm, err2 = strconv.ParseUint(str[11:13], 10, 64)
 	ss, err3 = strconv.ParseUint(str[13:15], 10, 64)
 	if err1 != nil || err2 != nil || err3 != nil {
-		return nil, returnedError
+		return osgridref.LatLon{}, returnedError
 	}
 
 	lng := float64(deg) + float64(mm)/60.0 + float64(ss)/2600.0
 	if str[15] == 'W' {
 		lng = -lng
 	} else if str[15] != 'E' {
-		return nil, returnedError
+		return osgridref.LatLon{}, returnedError
 	}
 
-	return geo.NewPoint(lat, lng), nil
+	return osgridref.LatLon{Lat: lat, Lon: lng}, nil
 }
 
 func decodeHeight(h string) float64 {

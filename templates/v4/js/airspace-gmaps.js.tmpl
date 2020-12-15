@@ -1,5 +1,5 @@
 <!-- airspace-gmaps.js -->
-{{define "paths"}}{{range .}} { lat: {{.Lat}}, lng: {{.Lng}} }, {{end}}{{end}}
+{{define "paths"}}{{range .}} { lat: {{.Lat}}, lng: {{.Lon}} }, {{end}}{{end}}
 
 function createAirspace() {
     var objects = [];
@@ -27,7 +27,7 @@ function createAirspace() {
               fillColor: "red",
               fillOpacity: 0.15,
               map: map,
-              center: { lat: {{.Circle.Centre.Lat}}, lng: {{.Circle.Centre.Lng}} },
+              center: { lat: {{.Circle.Centre.Lat}}, lng: {{.Circle.Centre.Lon}} },
               radius: {{.Circle.Radius}},
             })
     );
