@@ -6,6 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/kr/pretty v0.2.1
 	github.com/llgcode/draw2d v0.0.0-20200930101115-bfaf5d914d1e
+	github.com/paulcager/go-http-middleware v0.0.0-20201217214326-f1e1271eaabe
 	github.com/paulcager/osgridref v1.2.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1

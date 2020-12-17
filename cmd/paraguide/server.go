@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image/png"
 	"log"
-	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/paulcager/go-http-middleware"
 	"github.com/paulcager/paraguide/airspace"
 	flag "github.com/spf13/pflag"
 )
@@ -109,16 +109,16 @@ func sortSites(sites map[string]Site) []string {
 }
 
 func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
-	http.Handle("/"+apiVersion+"/site-icons/", makeCachingHandler(imageCache, http.HandlerFunc(
+	http.Handle("/"+apiVersion+"/site-icons/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			iconHandler(sites, w, r)
 		})))
 
-	http.Handle("/"+apiVersion+"/wind-indicator/", makeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
+	http.Handle("/"+apiVersion+"/wind-indicator/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
-	http.Handle("/"+apiVersion+"/weather/", makeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+	http.Handle("/"+apiVersion+"/weather/", middleware.MakeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
 
-	//http.Handle("/airspace/", makeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
+	//http.Handle("/airspace/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
 	//features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
 	http.HandleFunc("/airspace/debug/", func(w http.ResponseWriter, r *http.Request) {
 		features, _ := airspace.LoadFile("donc.yml")
@@ -126,7 +126,7 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 		json.NewEncoder(w).Encode(features)
 	})
 
-	http.Handle("/", makeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
+	http.Handle("/", middleware.MakeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
 	if !strings.Contains(listenPort, ":") {
 		listenPort = ":" + listenPort
@@ -137,38 +137,11 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 		ReadHeaderTimeout: 20 * time.Second,
 		WriteTimeout:      2 * time.Minute,
 		IdleTimeout:       10 * time.Minute,
-		Handler:           makeLoggingHandler(http.DefaultServeMux),
+		Handler:           middleware.MakeLoggingHandler(http.DefaultServeMux),
 		Addr:              listenPort,
 	}
 
 	return s
-}
-
-func makeLoggingHandler(h http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			h.ServeHTTP(w, r)
-			end := time.Now()
-
-			uri := r.URL.String()
-			method := r.Method
-			fmt.Printf("%s %s %s %d\n", method, uri, r.RemoteAddr, end.Sub(start).Milliseconds())
-		})
-}
-
-func makeCachingHandler(age time.Duration, h http.Handler) http.Handler {
-	ageSeconds := int64(math.Round(age.Seconds()))
-	if ageSeconds <= 0 {
-		return h
-	}
-
-	header := fmt.Sprintf("public,max-age=%d", ageSeconds)
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Cache-Control", header)
-			h.ServeHTTP(w, r)
-		})
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
