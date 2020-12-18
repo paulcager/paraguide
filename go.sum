@@ -124,6 +124,8 @@ github.com/llgcode/draw2d v0.0.0-20200930101115-bfaf5d914d1e h1:YRRazju3DMGuZTSW
 github.com/llgcode/draw2d v0.0.0-20200930101115-bfaf5d914d1e/go.mod h1:mVa0dA29Db2S4LVqDYLlsePDzRJLDfdhVZiI15uY0FA=
 github.com/llgcode/ps v0.0.0-20150911083025-f1443b32eedb h1:61ndUreYSlWFeCY44JxDDkngVoI7/1MVhEl98Nm0KOk=
 github.com/llgcode/ps v0.0.0-20150911083025-f1443b32eedb/go.mod h1:1l8ky+Ew27CMX29uG+a2hNOKpeNYEQjjtiALiBlFQbY=
+github.com/paulcager/gb-airspace v1.0.0 h1:tu1KtUOpwS9Psh+3waUqVxSyXHt/88fIzloFpdJ00L8=
+github.com/paulcager/gb-airspace v1.0.0/go.mod h1:u6S6RJbxo9eqNeR366QjWEeRCEMqY1YDqrn+kCiiWmw=
 github.com/paulcager/go-http-middleware v0.0.0-20201217214326-f1e1271eaabe h1:fA+EZAArUBNnCYx0/5Ct/Rq4lKDmVTzxllz8qccHXFI=
 github.com/paulcager/go-http-middleware v0.0.0-20201217214326-f1e1271eaabe/go.mod h1:K4zISwO5aHZ0dwjY2h0KWB939Rg/ncdkcdTZjze4cFU=
 github.com/paulcager/osgridref v1.2.0 h1:9fgFV4+CGEN+FZsAuwllrsC837Vr96o35hpyIys0SzY=

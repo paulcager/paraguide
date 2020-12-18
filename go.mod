@@ -8,8 +8,9 @@ require (
 	github.com/llgcode/draw2d v0.0.0-20200930101115-bfaf5d914d1e
 	github.com/paulcager/go-http-middleware v0.0.0-20201217214326-f1e1271eaabe
 	github.com/paulcager/osgridref v1.2.0
+	github.com/paulcager/gb-airspace v1.0.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.6.1 // indirect
 	google.golang.org/api v0.35.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

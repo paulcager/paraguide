@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/paulcager/gb-airspace"
 	"github.com/paulcager/go-http-middleware"
-	"github.com/paulcager/paraguide/airspace"
 	flag "github.com/spf13/pflag"
 )
 
@@ -76,7 +76,6 @@ func main() {
 	model["webcams"] = webcams
 
 	air, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
-	//air, err := airspace.LoadFile(`donc.yml`)
 	if err != nil {
 		panic(err)
 	}
