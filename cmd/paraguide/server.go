@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/paulcager/osgridref"
 	"image/png"
 	"log"
 	"net/http"
@@ -116,6 +117,8 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	http.Handle("/"+apiVersion+"/wind-indicator/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
 	http.Handle("/"+apiVersion+"/weather/", middleware.MakeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+
+	http.HandleFunc("/"+apiVersion+"/location", locationInfoHandler)
 
 	//http.Handle("/airspace/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
 	//features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
@@ -251,6 +254,49 @@ func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) 
 	if err := png.Encode(w, img); err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 	}
+}
+
+func locationInfoHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	var (
+		gridRef osgridref.OsGridRef
+		err     error
+	)
+	if s := strings.TrimSpace(q.Get("gridref")); s != "" {
+		gridRef, err = osgridref.ParseOsGridRef(s)
+	} else if s := strings.TrimSpace(q.Get("latlon")); s != "" {
+		var latLon osgridref.LatLonEllipsoidalDatum
+		latLon, err = osgridref.ParseLatLon(s, 0, osgridref.WGS84)
+		if err == nil {
+			gridRef = latLon.ToOsGridRef()
+		}
+	} else {
+		err = fmt.Errorf("missing gridref or latlon parameters")
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	info, err := GetLocationInfo(gridRef)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(os.Stderr).Encode(info)
+
+	w.Header().Add("Content-Type", "text/html")
+	t := templates["/airspace.html"]
+	err = t.Execute(w, info)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %s\n", r.URL, err)
+		// In case nothing has yet been sent
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "%s: %s\n", r.URL, err)
+	}
+
 }
 
 func windHandler(w http.ResponseWriter, r *http.Request) {
