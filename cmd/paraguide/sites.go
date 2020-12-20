@@ -99,14 +99,14 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 	}
 
 	scrapers := map[string]func() ([]scraping.Site, error){
-		//"Pennine":      scraping.Pennine,
-		//"Dales":        scraping.Dales,
-		//"NorthWales":   scraping.NorthWales,
-		//"MidWales":     scraping.MidWales,
-		//"WelshBorders": scraping.WelshBorders,
-		//"LakeDistrict": scraping.LakeDistrict,
-		//"Snowdonia":    scraping.Snowdonia,
-		//"Cayley":       scraping.Cayley,
+		"Pennine":      scraping.Pennine,
+		"Dales":        scraping.Dales,
+		"NorthWales":   scraping.NorthWales,
+		"MidWales":     scraping.MidWales,
+		"WelshBorders": scraping.WelshBorders,
+		"LakeDistrict": scraping.LakeDistrict,
+		"Snowdonia":    scraping.Snowdonia,
+		"Cayley":       scraping.Cayley,
 	}
 
 	// Some site guides require that we visit a page per site. To speed things up, process all

@@ -263,12 +263,8 @@ function showLatLonInfo(latLng) {
 }
 
 function addListeners() {
-    google.maps.event.addListener(map, "contextmenu", function(event) {
-        console.log("contextmenu@", event.latLng);
-        showLatLonInfo(event.latLng);
-    });
-    google.maps.event.addListener(map, "dblclick", function(event) {
-        console.log("dblclick@", event.latLng);
+    google.maps.event.addListener(map, "click", function(event) {
+        console.log("click@", event.latLng);
         showLatLonInfo(event.latLng);
     });
     console.log("addListeners exit");
