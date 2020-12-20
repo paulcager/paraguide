@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/css/paraguide.css" />
+    <link href="https://unpkg.com/purecss@2.0.3/build/tables-min.css" type="text/css" rel="stylesheet" />
+
+    <title>Airspace for {{.GridRef}} ({{.Lat}},{{.Lon}}), Elevation≅{{.Height}}</title>
+
+</head>
+<body class="loc-info">
+    <h1>Airspace</h1>
+
+    <p class="loc-info">
+    <b>OS Grid Ref:</b> {{.GridRef}} <span class="small">({{printf "%.6f" .Lat}},{{printf "%.6f" .Lon}})</span>
+    </p>
+    <p class="loc-info">
+    <b>Elevation:</b> {{.Height}}m, {{toFeet .Height}}ft
+    </p>
+
+    {{ if .Airspace }}
+        <table class="loc-info airspace pure-table pure-table-striped">
+        <tr> <th>Name</th>  <th>Type</th> <th>Class</th> <th>Height</th> <th>Clearance</th>  <th>Danger</th> </tr>
+        {{range .Airspace}}
+            <tr> <td>{{.Name}}</td>  <td>{{.Type}}</td> <td>{{.Class}}</td>  <td>{{.Lower}} - {{.Upper}}</td> <td>{{yn .ClearanceRequired}}</td>  <td>{{yn .Danger}}</td> </tr>
+            <!-- {{json .Circle}} -->
+            <!-- {{json .Polygon}} -->
+        {{end}}
+        </table>
+    {{else}}
+        <p class="loc-info">No airspace information found for this location.</p>
+    {{end}}
+
+</body>
+</html>

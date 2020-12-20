@@ -17,6 +17,14 @@ var (
 		"id":      idOf,
 		"json":    toJSON,
 		"api_key": func() string { return apiKey },
+		"yn": func(x bool) string {
+			if x {
+				return "Y"
+			}
+			return "N"
+		},
+		"toMeters": func(x float64) float64 { return x / 3.281 },
+		"toFeet": func(x float64) float64 { return x * 3.281 },
 	}
 )
 

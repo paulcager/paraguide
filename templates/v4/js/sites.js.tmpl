@@ -253,13 +253,23 @@ function toggleWeather() {
     });
 }
 
+function showLatLonInfo(latLng) {
+    $.get("/{{.apiVersion}}/location?latlon=" + latLng.toUrlValue(), function(data, status){
+        console.log("Status: " + status, data);
+        infoWindow.setContent(data);
+        infoWindow.setPosition(latLng);
+        infoWindow.open(map);
+    });
+}
+
 function addListeners() {
-    google.maps.event.addListener(map, "rightclick", function(event) {
-            console.log("Event", event);
-            var lat = event.latLng.lat();
-            var lng = event.latLng.lng();
-            // populate yor box/field with lat, lng
-            alert("Lat=" + lat + "; Lng=" + lng);
+    google.maps.event.addListener(map, "contextmenu", function(event) {
+        console.log("contextmenu@", event.latLng);
+        showLatLonInfo(event.latLng);
+    });
+    google.maps.event.addListener(map, "dblclick", function(event) {
+        console.log("dblclick@", event.latLng);
+        showLatLonInfo(event.latLng);
     });
     console.log("addListeners exit");
 }

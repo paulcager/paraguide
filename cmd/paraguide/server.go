@@ -120,14 +120,6 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 
 	http.HandleFunc("/"+apiVersion+"/location", locationInfoHandler)
 
-	//http.Handle("/airspace/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(airspaceHandler)))
-	//features, _ := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
-	http.HandleFunc("/airspace/debug/", func(w http.ResponseWriter, r *http.Request) {
-		features, _ := airspace.LoadFile("donc.yml")
-		w.Header().Add("Content-Type", "text/plain")
-		json.NewEncoder(w).Encode(features)
-	})
-
 	http.Handle("/", middleware.MakeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
 	if !strings.Contains(listenPort, ":") {
@@ -288,7 +280,7 @@ func locationInfoHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(os.Stderr).Encode(info)
 
 	w.Header().Add("Content-Type", "text/html")
-	t := templates["/airspace.html"]
+	t := templates["/loc-info.html"]
 	err = t.Execute(w, info)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", r.URL, err)

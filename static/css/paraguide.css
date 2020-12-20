@@ -65,5 +65,16 @@ body {
   color: #fff;
   display: block;
 }
- 
 
+p.loc-info {
+    font-size: 120%;
+    padding-bottom: 1em;
+}
+
+.small {
+    font-size: 75%;
+}
+
+th {
+    text-align: left;
+}
