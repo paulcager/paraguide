@@ -1,21 +1,23 @@
 <!DOCTYPE html>
+{{ $latLon := printf "%.6f,%.6f" .Lat .Lon -}}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/css/paraguide.css" />
     <link href="https://unpkg.com/purecss@2.0.3/build/tables-min.css" type="text/css" rel="stylesheet" />
 
-    <title>Airspace for {{.GridRef}} ({{.Lat}},{{.Lon}}), Elevation≅{{.Height}}</title>
+    <title>Airspace for {{.GridRef}} ({{$latLon}}), Elevation≅{{.Height}}</title>
 
 </head>
 <body class="loc-info">
     <h1>Airspace</h1>
 
     <p class="loc-info">
-    <b>OS Grid Ref:</b> {{.GridRef}} <span class="small">({{printf "%.6f" .Lat}},{{printf "%.6f" .Lon}})</span>
+    <b>OS Grid Ref:</b>    <a href="https://osmaps.ordnancesurvey.co.uk/{{$latLon}},14">{{.GridRef}}</a>
+       <span class="small">(<a href="https://www.google.com/maps/place/{{$latLon}}">{{$latLon}}</a>)</span>
     </p>
     <p class="loc-info">
-    <b>Elevation:</b> {{.Height}}m, {{toFeet .Height}}ft
+    <b>Elevation:</b> {{.Height}}m, {{printf "%.0f" (toFeet .Height)}}ft
     </p>
 
     {{ if .Airspace }}
