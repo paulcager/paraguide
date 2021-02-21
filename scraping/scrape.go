@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -38,6 +39,7 @@ var httpClient = &http.Client{
 			return errors.New("stopped after 10 redirects")
 		}
 		if req.URL.Host != via[0].URL.Host {
+			log.Printf("Leaving club: %q ... %q\n", req.URL, via[0].URL)
 			return errLeavingClub
 		}
 		return nil
@@ -430,7 +432,7 @@ func Snowdonia() ([]Site, error) {
 		a := s.Find("td:nth-child(1) > a")
 		href := a.AttrOr("href", "")
 		if href == "" {
-			fmt.Fprintf(os.Stderr, "Skipping Snowdonia site %q as no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
+			fmt.Fprintf(os.Stderr, "Skipping Snowdonia site %q has no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
 			return
 		}
 		id := strings.ReplaceAll(href, "/", "-")
@@ -498,7 +500,7 @@ func WelshBorders() ([]Site, error) {
 		a := s.Find("td:nth-child(1) a")
 		href := a.AttrOr("href", "")
 		if href == "" {
-			fmt.Fprintf(os.Stderr, "Skipping MWHGPC site %q as no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
+			fmt.Fprintf(os.Stderr, "Skipping MWHGPC site %q has no hyperlink. Site probably closed\n", s.Find("td:nth-child(1)").Text())
 			return
 		}
 		id := path.Base(href)
@@ -542,7 +544,7 @@ func Cayley() ([]Site, error) {
 	doc.Find("ul.sub-menu span:contains('Sites (alphabetically)')").Parent().Siblings().Find("li a").Each(func(i int, s *goquery.Selection) {
 		href := s.AttrOr("href", "")
 		if href == "" {
-			fmt.Fprintf(os.Stderr, "Skipping Cayley site %q as no hyperlink. Site probably closed\n", s.Text())
+			fmt.Fprintf(os.Stderr, "Skipping Cayley site %q has no hyperlink. Site probably closed\n", s.Text())
 			return
 		}
 		id := path.Base(href)
