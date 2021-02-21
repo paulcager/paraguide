@@ -38,7 +38,7 @@ var httpClient = &http.Client{
 		if len(via) >= 10 {
 			return errors.New("stopped after 10 redirects")
 		}
-		if req.URL.Host != via[0].URL.Host {
+		if strings.TrimPrefix(req.URL.Host, "www.") != strings.TrimPrefix(via[0].URL.Host, "www.") {
 			log.Printf("Leaving club: %q ... %q\n", req.URL, via[0].URL)
 			return errLeavingClub
 		}
