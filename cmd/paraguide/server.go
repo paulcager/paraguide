@@ -31,6 +31,10 @@ var (
 	noWeather       bool
 	listenPort      string
 	includeKMLSites bool
+	clubCacheMaxAge time.Duration
+	clubCacheDir    = "club-cache"
+	heightServer    = "http://osheight-server:9091"
+	airspaceServer  = "http://airspace-server:9092"
 )
 
 func main() {
@@ -40,6 +44,7 @@ func main() {
 	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
 	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
 	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
+	flag.DurationVar(&clubCacheMaxAge, "club-cache-max-age", 24*time.Hour, "Ignore cached scrapes of sites if older tna this.")
 	flag.Parse()
 
 	http.DefaultClient.Timeout = time.Minute
@@ -76,7 +81,10 @@ func main() {
 	}
 	model["webcams"] = webcams
 
-	air, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
+	model["airspaceServer"] = airspaceServer
+	model["heightServer"] = heightServer
+
+	air, err := GetAirspace()
 	if err != nil {
 		panic(err)
 	}
@@ -119,6 +127,11 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	http.Handle("/"+apiVersion+"/weather/", middleware.MakeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
 
 	http.HandleFunc("/"+apiVersion+"/location", locationInfoHandler)
+
+	// Encourage Google to drop the cached sites by returning "Gone"
+	http.Handle("/sites/", middleware.MakeCachingHandler(24*time.Hour, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "410 page gone", http.StatusGone)
+	})))
 
 	http.Handle("/", middleware.MakeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -273,11 +286,12 @@ func locationInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	info, err := GetLocationInfo(gridRef)
 	if err != nil {
+		log.Printf("Error getting location info for %q: %s\n", gridRef, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(os.Stderr).Encode(info)
+	//json.NewEncoder(os.Stderr).Encode(info)
 
 	w.Header().Add("Content-Type", "text/html")
 	t := templates["/loc-info.html"]

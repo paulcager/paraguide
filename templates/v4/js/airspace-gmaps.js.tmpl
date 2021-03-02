@@ -3,24 +3,28 @@
 
 function createAirspace() {
     var objects = [];
+    var feature;
 {{ range $f := .airspace}} {{- range $v := .Geometry  }}
 {{- if lt .Lower 5000.0}} {{- if .ClearanceRequired }}
     {{- if .Polygon }}
-    objects.push(
-        new google.maps.Polygon({   // {{.ID}} - {{.Name}} {{.Sequence}} ({{$f.Type}}, {{.Class}}, {{.Lower}})
+        feature = new google.maps.Polygon({   // {{.ID}} - {{.Name}} {{.Sequence}} ({{$f.Type}}, {{.Class}}, {{.Lower}})
+            airId: "{{.ID}}",
             map: map,
+            clickable: false,   // This also stops mousemove events etc. :(
             fillColor: "red",
             fillOpacity: 0.10,
             strokeColor: "blue",
             strokeOpacity: 0.8,
             strokeWeight: 2,
             paths: [ {{ template "paths" .Polygon }} ],
-        })
-    );
+        });
+        objects.push(feature)
     {{- end}}
     {{- if .Circle.Radius }}
     objects.push(
         new google.maps.Circle({   // {{.ID}} - {{.Name}} ({{$f.Type}}, {{.Class}}, {{.Lower}})
+              airId: "{{.ID}}",
+              clickable: false,   // This also stops mousemove events etc. :(
               strokeColor: "blue",
               strokeOpacity: 0.8,
               strokeWeight: 2,
@@ -35,4 +39,12 @@ function createAirspace() {
 {{end}}{{end -}}
 {{end}}{{end}}
     return objects;
+}
+
+function showAirspace(id) {
+    console.log("showAirspace(" + id + ")");
+        $.get("{{.airspaceServer}}/v4/airspace/?name=" + id, function(data, status){
+            console.log("Got", data);
+        });
+        // Ignore errors; we don't have data over the sea etc.
 }

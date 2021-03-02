@@ -255,11 +255,11 @@ function toggleWeather() {
 
 function showLatLonInfo(latLng) {
     $.get("/{{.apiVersion}}/location?latlon=" + latLng.toUrlValue(), function(data, status){
-        console.log("Status: " + status, data);
         infoWindow.setContent(data);
         infoWindow.setPosition(latLng);
         infoWindow.open(map);
     });
+    // Ignore errors; we don't have data over the sea etc.
 }
 
 function addListeners() {

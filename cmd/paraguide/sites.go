@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -115,6 +116,12 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 
 	for name := range scrapers {
 		go func(name string) {
+			scrapedSites, ok := readCachedSites(name)
+			if ok {
+				ch <- scrapedSites
+				return
+			}
+
 			scrapedSites, err := scrapers[name]()
 			if err != nil {
 				// Log error but carry on
@@ -124,6 +131,7 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 			}
 
 			fmt.Fprintf(os.Stderr, "Adding %d %s sites\n", len(scrapedSites), name)
+			saveCachedSites(name, scrapedSites)
 			ch <- scrapedSites
 		}(name)
 	}
@@ -140,6 +148,48 @@ func loadSites(clubs map[string]Club) (map[string]Site, error) {
 
 	fmt.Fprintf(os.Stderr, "Added %d sites from the spreadsheet (total is now %d)\n", len(sheetSites), len(sites))
 	return sites, err
+}
+
+func readCachedSites(name string) ([]scraping.Site, bool) {
+	cacheFileName := filepath.Join(clubCacheDir, name+".json")
+	stat, err := os.Stat(cacheFileName)
+	if err != nil || time.Now().Sub(stat.ModTime()) > clubCacheMaxAge {
+		return nil, false
+	}
+
+	file, err := os.Open(cacheFileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read cached file %s - ignoring (%s)\n", cacheFileName, err)
+		return nil, false
+	}
+	defer file.Close()
+
+	var ret []scraping.Site
+	err = json.NewDecoder(file).Decode(&ret)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not decode cached file %s - ignoring (%s)\n", cacheFileName, err)
+		return nil, false
+	}
+
+	fmt.Fprintf(os.Stderr, "Using %d cached sites for %s\n", len(ret), name)
+	return ret, true
+}
+
+func saveCachedSites(name string,sites []scraping.Site) {
+	cacheFileName := filepath.Join(clubCacheDir, name+".json")
+	os.MkdirAll(filepath.Dir(cacheFileName), 0777)
+	file, err := os.Create(cacheFileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not create cached file %s (%s)\n", cacheFileName, err)
+		return
+	}
+	defer file.Close()
+
+	err = json.NewEncoder(file).Encode(sites)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not encode cached file %s (%s)\n", cacheFileName, err)
+		return
+	}
 }
 
 func addScraped(sites map[string]Site, scraped []scraping.Site) {

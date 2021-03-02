@@ -21,10 +21,18 @@
     </p>
 
     {{ if .Airspace }}
+        <!-- {{ json .Airspace }} -->
         <table class="loc-info airspace pure-table pure-table-striped">
         <tr> <th>Name</th>  <th>Type</th> <th>Class</th> <th>Height</th> <th>Clearance</th>  <th>Danger</th> </tr>
         {{range .Airspace}}
-            <tr> <td>{{.Name}}</td>  <td>{{.Type}}</td> <td>{{.Class}}</td>  <td>{{.Lower}} - {{.Upper}}</td> <td>{{yn .ClearanceRequired}}</td>  <td>{{yn .Danger}}</td> </tr>
+            <tr>
+                <td><a href="#" onclick="showAirspace('{{.ID}}')">{{.Name}}</a></td>
+                <td>{{.Type}}</td>
+                <td>{{.Class}}</td>
+                <td>{{.Lower}} - {{.Upper}}</td>
+                <td>{{yn .ClearanceRequired}}</td>
+                <td>{{yn .Danger}}</td>
+            </tr>
             <!-- {{json .Circle}} -->
             <!-- {{json .Polygon}} -->
         {{end}}

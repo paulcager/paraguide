@@ -11,8 +11,6 @@ import (
 
 var (
 	httpClient     = &http.Client{Timeout: 4 * time.Second}
-	heightServer   = "http://osheight-server:9091"
-	airspaceServer = "http://airspace-server:9092"
 )
 
 type LocationInfo struct {
@@ -29,7 +27,7 @@ func GetLocationInfo(gridRef osgridref.OsGridRef) (LocationInfo, error) {
 	// TODO change to concurrent queries.
 	height, err1 := getHeight(gridRef)
 	lat, lon := gridRef.ToLatLon()
-	volumes, err2 := getAirspace(lat, lon)
+	volumes, err2 := getAirspaceAtPosition(lat, lon)
 
 	err := err1
 	if err == nil {
@@ -61,14 +59,31 @@ func getHeight(gridRef osgridref.OsGridRef) (float64, error) {
 	return reply.Height, err
 }
 
-func getAirspace(lat, lon float64) ([]airspace.Volume, error) {
-	resp, err := httpClient.Get(airspaceServer + "/v4/airspace/" + fmt.Sprintf("%f,%f", lat, lon))
+func getAirspaceAtPosition(lat, lon float64) ([]airspace.Volume, error) {
+	resp, err := httpClient.Get(fmt.Sprintf("%s/v4/airspace/?latlon=%f,%f", airspaceServer, lat, lon))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var reply []airspace.Volume
+	err = json.NewDecoder(resp.Body).Decode(&reply)
+	return reply, err
+}
+
+func GetAirspace() (map[string]airspace.Feature, error) {
+	url := fmt.Sprintf("%s/v4/airspace/all", airspaceServer)
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%q returned %s", url, resp.Status)
+	}
+
+	var reply map[string]airspace.Feature
 	err = json.NewDecoder(resp.Body).Decode(&reply)
 	return reply, err
 }
