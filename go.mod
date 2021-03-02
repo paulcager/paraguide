@@ -13,6 +13,3 @@ require (
 	google.golang.org/api v0.35.0
 )
 
-replace (
-	github.com/paulcager/gb-airspace => ../gb-airspace
-)
