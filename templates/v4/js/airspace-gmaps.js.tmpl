@@ -42,9 +42,10 @@ function createAirspace() {
 }
 
 function showAirspace(id) {
-    console.log("showAirspace(" + id + ")");
-        $.get("{{.airspaceServer}}/v4/airspace/?name=" + id, function(data, status){
-            console.log("Got", data);
-        });
-        // Ignore errors; we don't have data over the sea etc.
+    // There will be many shapes with the same airspace ID - scan them all.
+    for (i in airspace) {
+        if (airspace[i].airId == id) {
+            airspace[i].setMap(map);
+        }
+    }
 }

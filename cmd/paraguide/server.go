@@ -24,6 +24,7 @@ const (
 
 var (
 	model           = make(map[string]interface{})
+	Airspace        map[string]airspace.Feature
 	fs              = http.FileServer(http.Dir("static"))
 	imageCache      time.Duration
 	staticCache     time.Duration
@@ -84,11 +85,11 @@ func main() {
 	model["airspaceServer"] = airspaceServer
 	model["heightServer"] = heightServer
 
-	air, err := GetAirspace()
+	Airspace, err = GetAirspace()
 	if err != nil {
 		panic(err)
 	}
-	model["airspace"] = air
+	model["airspace"] = Airspace
 
 	//queryMetSites()
 	if !noWeather {
@@ -125,6 +126,8 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	http.Handle("/"+apiVersion+"/wind-indicator/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
 	http.Handle("/"+apiVersion+"/weather/", middleware.MakeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
+
+	http.HandleFunc("/"+apiVersion+"/airspace/", getAirspaceHandler)
 
 	http.HandleFunc("/"+apiVersion+"/location", locationInfoHandler)
 
@@ -331,7 +334,28 @@ func windHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func airspaceHandler(w http.ResponseWriter, r *http.Request) {
+func getAirspaceHandler(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/"+apiVersion+"/airspace/")
+	feature, ok := Airspace[id]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	b, err := json.Marshal(&feature)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	_, err = w.Write(b)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func airspaceSVGHandler(w http.ResponseWriter, r *http.Request) {
 	a, err := airspace.Load(`https://gitlab.com/ahsparrow/airspace/-/raw/master/airspace.yaml`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
