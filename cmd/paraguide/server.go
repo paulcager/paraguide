@@ -6,6 +6,7 @@ import (
 	"github.com/paulcager/osgridref"
 	"image/png"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"sort"
@@ -127,6 +128,7 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	})))
 
 	http.HandleFunc("/headers", headersHandler)
+	http.HandleFunc("/about", aboutHandler)
 
 	http.Handle("/", middleware.MakeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -314,4 +316,49 @@ func airspaceSVGHandler(w http.ResponseWriter, r *http.Request) {
 func headersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain")
 	r.Header.Write(w)
+}
+
+func aboutHandler(w http.ResponseWriter, r *http.Request) {
+	var originIP string
+	for _, ff := range r.Header.Values("X-Forwarded-For") {
+		ip := net.ParseIP(ff)
+		if ip == nil {
+			continue
+		}
+
+		if ip.IsPrivate() {
+			continue
+		}
+
+		originIP = ff
+	}
+
+	if originIP == "" {
+		// rick-roll instead.
+		w.Header().Add("Location", "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
+	}
+
+	var geo struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+
+	resp, err := http.Get("http://ipwhois.app/json/" + originIP)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&geo)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	fmt.Printf("%s geolocated to %v\n", r.Header.Values("X-Forwarded-For"), geo)
+	url := fmt.Sprintf("https://nuclearsecrecy.com/nukemap/?&kt=50000&lat=%f&lng=%f&hob_psi=5&hob_ft=37743&ff=3&psi=20,5,1&zm=9", geo.Latitude, geo.Longitude)
+	w.Header().Add("Location", url)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
