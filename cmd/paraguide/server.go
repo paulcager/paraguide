@@ -28,8 +28,6 @@ var (
 	fs              = http.FileServer(http.Dir("static"))
 	imageCache      time.Duration
 	staticCache     time.Duration
-	metRefresh      time.Duration
-	noWeather       bool
 	listenPort      string
 	includeKMLSites bool
 	clubCacheMaxAge time.Duration
@@ -42,8 +40,6 @@ func main() {
 	flag.StringVar(&listenPort, "port", ":8080", "Port to listen on")
 	flag.DurationVar(&imageCache, "image-cache-max-age", 7*24*time.Hour, "If not zero, the max-age property to set in Cache-Control for images")
 	flag.DurationVar(&staticCache, "static-cache-max-age", 1*time.Hour, "If not zero, the max-age property to set in Cache-Control for static/template files")
-	flag.DurationVar(&metRefresh, "met-refresh", 10*time.Minute, "How often to refresh weather data from metoffice")
-	flag.BoolVar(&noWeather, "no-weather", false, "Prevent querying metoffice for weather.")
 	flag.BoolVar(&includeKMLSites, "include-kml-sites", false, "Include sites read from KML file")
 	flag.DurationVar(&clubCacheMaxAge, "club-cache-max-age", 24*time.Hour, "Ignore cached scrapes of sites if older tna this.")
 	flag.Parse()
@@ -87,13 +83,9 @@ func main() {
 
 	Airspace, err = GetAirspace()
 	if err != nil {
-		panic(err)
-	}
-	model["airspace"] = Airspace
-
-	//queryMetSites()
-	if !noWeather {
-		startMetofficeRefresh(metRefresh)
+		log.Printf("Could not get airspace from server: %s\n", err)
+	} else {
+		model["airspace"] = Airspace
 	}
 
 	s := makeHTTPServer(sites, listenPort)
@@ -125,8 +117,6 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 
 	http.Handle("/"+apiVersion+"/wind-indicator/", middleware.MakeCachingHandler(imageCache, http.HandlerFunc(windHandler)))
 
-	http.Handle("/"+apiVersion+"/weather/", middleware.MakeCachingHandler(metRefresh, http.HandlerFunc(weatherHandler)))
-
 	http.HandleFunc("/"+apiVersion+"/airspace/", getAirspaceHandler)
 
 	http.HandleFunc("/"+apiVersion+"/location", locationInfoHandler)
@@ -135,6 +125,8 @@ func makeHTTPServer(sites map[string]Site, listenPort string) *http.Server {
 	http.Handle("/sites/", middleware.MakeCachingHandler(24*time.Hour, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "410 page gone", http.StatusGone)
 	})))
+
+	http.HandleFunc("/headers", headersHandler)
 
 	http.Handle("/", middleware.MakeCachingHandler(staticCache, http.HandlerFunc(rootHandler)))
 
@@ -172,53 +164,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fs.ServeHTTP(w, r)
 	}
-}
-
-func weatherHandler(w http.ResponseWriter, r *http.Request) {
-	var reports []MetofficeReport
-	if r.URL.RawQuery == "" {
-		reports = getAllWeather()
-	} else {
-		lat1, err1 := floatParam(r, "south")
-		lon1, err2 := floatParam(r, "west")
-		lat2, err3 := floatParam(r, "north")
-		lon2, err4 := floatParam(r, "east")
-
-		if anyError(err1, err2, err3, err4) != nil {
-			http.Error(w, "Invalid params: "+r.URL.String(), http.StatusBadRequest)
-			return
-		}
-
-		rect := Rectangle{
-			Min: LatLon{
-				Lat: lat1,
-				Lon: lon1,
-			},
-			Max: LatLon{
-				Lat: lat2,
-				Lon: lon2,
-			},
-		}
-
-		reports = getMatchingWeather(rect)
-	}
-
-	if reports == nil {
-		reports = []MetofficeReport{}
-	}
-	sort.Slice(reports, func(i, j int) bool { return reports[i].ID < reports[j].ID })
-
-	enc := json.NewEncoder(w)
-	enc.SetEscapeHTML(false)
-	err := enc.Encode(reports)
-	if err != nil {
-		http.Error(w, "Marshal failed "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func floatParam(r *http.Request, name string) (float64, error) {
-	return strconv.ParseFloat(r.URL.Query().Get(name), 64)
 }
 
 func iconHandler(sites map[string]Site, w http.ResponseWriter, r *http.Request) {
@@ -364,4 +309,9 @@ func airspaceSVGHandler(w http.ResponseWriter, r *http.Request) {
 	if err := airspace.ToSVG(a, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func headersHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/plain")
+	r.Header.Write(w)
 }

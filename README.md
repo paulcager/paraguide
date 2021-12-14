@@ -15,4 +15,4 @@ www.paraguide.uk
 2) Display only sites where wind direction matches (using mouse).
 3) ~~Remove stuff from `static/js` we no longer use.~~
 4) ~~Bookmark site not working.~~
-5) Airspace / land elevation.
+5) ~~Airspace / land elevation.~~

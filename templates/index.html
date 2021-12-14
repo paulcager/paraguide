@@ -7,7 +7,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery.mmenu/5.3.4/js/jquery.mmenu.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery.mmenu/8.5.22/mmenu.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -16,9 +16,12 @@
                     position : "left",
                     zposition : "front"
                 },
-                navbars: {
-                    content: [ "searchfield" ]
-                },
+                navbars: [
+                    {
+                        position: "top",
+                        content: [ "searchfield" ]
+                    }
+                ],
                 searchfield: {
                     add: true,
                     addTo: "panels",
@@ -34,7 +37,7 @@
         google.maps.event.addDomListener(window, 'load', initialize);
     </script>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/jQuery.mmenu/5.3.4/css/jquery.mmenu.all.min.css" type="text/css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jQuery.mmenu/8.5.22/mmenu.min.css" type="text/css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css" type="text/css" rel="stylesheet" />
     <link href="https://unpkg.com/purecss@2.0.3/build/tables-min.css" type="text/css" rel="stylesheet" />
 
@@ -73,14 +76,16 @@
                         {{end}}
                     </ul>
                 </li>
-                <li><span>Show Landing: <input id="toggleLanding" type="checkbox" class="Toggle" onClick="toggleLanding()"/></span></li>
-                <li><span>Show Parking: <input id="toggleParking" type="checkbox" class="Toggle" onClick="toggleParking()"/></span></li>
-                <li><span>Show Weather: <input id="toggleWeather" type="checkbox" class="Toggle" onClick="toggleWeather()"/></span></li>
-                <li><span>Show Airspace: <input id="toggleAirspace" type="checkbox" class="Toggle" onClick="toggleAirspace()"/></span></li>
+                {{- /* Change to "Toggle" to get the big toggle buttons */ -}}
+                {{- $toggleClass := "" }}
+                <li><span>Show Landing: <input id="toggleLanding" type="checkbox" class="{{$toggleClass}}" onClick="toggleLanding()"/></span></li>
+                <li><span>Show Parking: <input id="toggleParking" type="checkbox" class="{{$toggleClass}}" onClick="toggleParking()"/></span></li>
+                <li><span>Show Weather: <input id="toggleWeather" type="checkbox" class="{{$toggleClass}}" onClick="toggleWeather()"/></span></li>
+                <li><span>Show Airspace: <input id="toggleAirspace" type="checkbox" class="{{$toggleClass}}" onClick="toggleAirspace()"/></span></li>
                 <li><span>Clubs</span>
                     <ul>
                         {{range .clubs -}}
-                            <li><a href="{{.URL}}">{{.Name}}</a></li>
+                            <li><a href="{{.URL}}">{{.ID}} - {{.Name}}</a></li>
                         {{end}}
                         <li><a href="http://www.airways-airsports.com/">Airways</a></li>
                     </ul>
